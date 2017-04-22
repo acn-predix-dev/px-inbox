@@ -64,9 +64,12 @@ Custom property | Description | Default
         </div>
         <ul class="list-ui list-ui--small">
           <template is="dom-repeat" items="{{listItems}}" as="listItem" filter="{{_computeFilter(_query)}}" sort="{{_computeSort(sortBy)}}">
-            <li id="{{listItem.id}}" class$="{{_computeClass(selectedItem,listItem.id)}}" on-click="_selectItem">
+            <li id="{{listItem.id}}" class$="{{_computeClass(selectedItem,listItem.id)}}" on-change="_addItem">
               <div class="flex flex--justify">
                 <div class="flex flex--left">
+                  <div>
+                    <input type="checkbox" on-click-"_addItem"/>
+                  </div>
                   <div id="icon" class$="{{listItem.severity}} u-mr-">
                     <div class="svg-canvas">
                       <svg xmlns="http://www.w3.org/2000/svg" version="1.1" class="svg-triangle">
@@ -120,6 +123,10 @@ Custom property | Description | Default
       */
       listItems: {
         type: Array,
+        value: function() {
+          return [];
+        },
+        notify: true,
         observer: '_formatDates'
       },
       /**
@@ -128,6 +135,11 @@ Custom property | Description | Default
       */
       selectedItem: {
         type: String,
+        notify: true
+      },
+
+      selectedItems: {
+        type: Array,
         notify: true
       },
       /**
@@ -155,6 +167,18 @@ Custom property | Description | Default
         value: "100vh",
         observer: "_updateHeight"
       }
+    },
+
+    observers: [
+      'changeDetected(selectedItems.*)'
+    ],
+    changeDetected: function(changeRecord) {
+       console.log("Change is coming!");
+     },
+
+    _addItem: function(evt) {
+      this.push('selectedItems', evt.currentTarget.id);
+      console.log("_addItem");
     },
 
     /**
