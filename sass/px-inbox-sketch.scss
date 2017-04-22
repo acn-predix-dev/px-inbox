@@ -32,6 +32,8 @@ Predix branding rules go in px-inbox-predix.scss, not in this file.
 $inuit-enable-input--tiny: true;
 @import "px-forms-design/_base.forms.scss";
 
+$inuit-enable-btn--tertiary : true;
+@import "../bower_components/px-button-group-design/_objects.button-group.scss";
 
 $inuit-enable-list-ui--small: true;
 @import "px-list-ui-design/_objects.list-ui.scss";
@@ -109,6 +111,18 @@ $inuit-enable-margins--small: true;
 @import "px-spacing-design/_trumps.spacing.scss";
 @import "px-widths-design/_trumps.widths.scss";
 
+.disrupted-flight-row {
+  padding-right: 30px;
+}
+
+.delayed {
+  color: red;
+}
+
+.cancelled {
+  color: black;
+}
+
 .list-ui {
   border-top-width: 0px;
 }
@@ -128,6 +142,7 @@ $inuit-enable-margins--small: true;
 
 .px-inbox-checkbox {
   -webkit-appearance: none;
+  /*background-color: #fafafa;*/
   background-color: #fdfdfd;
   border: 1px solid #cacece;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), inset 0px -15px 10px -12px rgba(0, 0, 0, 0.05);
@@ -135,6 +150,3 @@ $inuit-enable-margins--small: true;
   display: inline-block;
   position: relative;
 }
-
-$inuit-enable-btn--tertiary : true;
-@import 'px-buttons-design/_objects.buttons.scss';
