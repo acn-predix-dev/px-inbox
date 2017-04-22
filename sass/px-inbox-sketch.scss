@@ -33,6 +33,8 @@ $inuit-enable-input--tiny: true;
 @import "px-forms-design/_base.forms.scss";
 
 $inuit-enable-btn--tertiary : true;
+$inuit-enable-btn--small : true;
+$inuit-enable-btn--disabled : true;
 @import "px-button-group-design/_objects.button-group.scss";
 
 $inuit-enable-list-ui--small: true;
