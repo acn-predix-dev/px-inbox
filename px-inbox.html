@@ -74,10 +74,15 @@ Custom property | Description | Default
             <div class="flex flex--justify">
               <div class="flex flex--left">
                 <div class="disrupted-flight-row flex__item flex__item--bottom">
-                  <input class="px-inbox-checkbox" type="checkbox"/>
+                  <input class="px-inbox-checkbox" type="checkbox" on-change="_selectAll" checked="{{isSelectedAll::change}}" />
                 </div>
                 <div class="text disrupted-flight-row flex__item flex__item--bottom">
-                  <button class="btn btn--tertiary">Solve</button>
+                  <template is="dom-if" if="{{isSolveEnabled}}">
+                    <button class="btn btn--tertiary">Solve</button>
+                  </template>
+                  <template is="dom-if" if="{{!isSolveEnabled}}">
+                    <button class="btn btn--disabled">Solve</button>
+                  </template>
                 </div>
               </div>
               <div class="flex flex--right">
@@ -97,11 +102,11 @@ Custom property | Description | Default
             </div>
           </li>
           <template is="dom-repeat" items="{{listItems}}" as="listItem" filter="{{_computeFilter(_query)}}" sort="{{_computeSort(sortBy)}}">
-            <li id="{{listItem.id}}" class$="{{_computeClass(selectedItem,listItem.id)}}" on-click="_selectItem">
+            <li class="list-ui__item pointer">
               <div class="flex flex--justify">
                 <div class="flex flex--left">
                   <div class="disrupted-flight-row flex__item flex__item--middle">
-                    <input class="px-inbox-checkbox" type="checkbox"/>
+                    <input id="{{listItem.flightID}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}" on-change="_addSelectedItem" />
                   </div>
                   <div class="text disrupted-flight-row">
                     <span class$="title {{_getColor(listItem)}}" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
@@ -200,7 +205,8 @@ Custom property | Description | Default
         type: Array,
         value: function() {
           return [];
-        }
+        },
+        notify: true
       },
 
       isReverse: {
@@ -208,6 +214,19 @@ Custom property | Description | Default
         value: false,
         notify: true,
         observer: '_sort'
+      },
+
+      isSolveEnabled: {
+        type: Boolean,
+        value: false,
+        notify: true
+      },
+
+      isSelectedAll: {
+        type: Boolean,
+        value: false,
+        notify: true,
+        observer: '_selectAll'
       }
     },
 
@@ -227,7 +246,8 @@ Custom property | Description | Default
       var otherItems = Polymer.dom(this.root).querySelectorAll('.selected');
       for (var i=0; i<otherItems.length; i++) {
         otherItems[i].classList.remove("selected");
-      };
+      }
+      ;
 
       evt.currentTarget.classList.add("selected");
       this.selectedItem = evt.currentTarget.id;
@@ -246,7 +266,8 @@ Custom property | Description | Default
         else {
           this.listItems[i].formattedDate = this.listItems[i].date;
         }
-      };
+      }
+      ;
       // By default, the first item in the array is selected on load.
       if(this.listItems && this.listItems.length > 0) {
         this.selectedItem = this.listItems[0].id;
@@ -262,7 +283,8 @@ Custom property | Description | Default
 
       for (var i=0; i<otherItems.length; i++) {
         otherItems[i].classList.remove("selected");
-      };
+      }
+      ;
       this.selectedItem = "";
 
       if (!query) {
@@ -289,7 +311,8 @@ Custom property | Description | Default
       var otherItems = Polymer.dom(this.root).querySelectorAll('.selected')
       for (var i=0; i<otherItems.length; i++) {
         otherItems[i].classList.remove("selected");
-      };
+      }
+      ;
       this.selectedItem = "";
       // return sort function which maps severities to numeric values
       if(sortBy === "severity") {
@@ -352,9 +375,9 @@ Custom property | Description | Default
 
     _buildChartData: function(listItem) {
       var chartData = [
-        [listItem.terminatingPax],
-        [listItem.connectingPax],
-        [listItem.misconnectingPax]
+        [listItem.terminatingPax.totalCount],
+        [listItem.connectingPax.totalCount],
+        [listItem.misconnectingPax.totalCount]
       ];
       return chartData;
     },
@@ -373,10 +396,18 @@ Custom property | Description | Default
     _sort: function() {
       if (this.listItems != null && this.listItems.length > 0) {
         this.listItems = _.orderBy(this.listItems, [
-          function (item) { return item.flightDetails.getBestDeptTime(); },
-          function (item) { return item.totalImpactedPax; },
-          function (item) { return item.flightDetails.businessCompartmentCount; },
-          function (item) { return item.flightDetails.flightNumber; }
+          function (item) {
+            return item.flightDetails.getBestDeptTime();
+          },
+          function (item) {
+            return item.totalImpactedPax;
+          },
+          function (item) {
+            return item.flightDetails.businessCompartmentCount;
+          },
+          function (item) {
+            return item.flightDetails.flightNumber;
+          }
         ], [this._getOrder(), "asc", "asc", "asc"]);
       }
     },
@@ -406,6 +437,57 @@ Custom property | Description | Default
         bestAvailableTime = scheduled;
       }
       return moment(bestAvailableTime).utc().format('HH:mm/DD');
+    },
+
+    _addSelectedItem: function (evt) {
+      if (evt.currentTarget.checked) {
+        this.push("selectedItems", evt.currentTarget.id);
+      } else {
+        var index = this.selectedItems.indexOf(evt.currentTarget.id);
+        this.splice('selectedItems', index, 1);
+      }
+      this._enableSolve();
+
+      if (this.selectedItems.length == this.listItems.length) {
+        this.isSelectedAll = true;
+      } else {
+        this.isSelectedAll = false;
+      }
+  },
+
+  _enableSolve: function() {
+    if (this.selectedItems != null && this.selectedItems.length > 0) {
+      this.isSolveEnabled = true;
+    } else {
+        this.isSolveEnabled = false;
     }
-  });
+  },
+
+  _selectAll: function() {
+    if (this.listItems != null && this.listItems.length > 0) {
+      for (var i = 0; i < this.listItems.length; i++) {
+        this.listItems[i].checked = this.isSelectedAll;
+        this._updateItem(this.listItems[i]);
+        if (this.isSelectedAll) {
+          this.push("selectedItems", this.listItems[i].flightID);
+        }
+      }
+
+      if (!this.isSelectedAll) {
+        this.selectedItems = [];
+      }
+
+      this._enableSolve();
+    }
+  },
+
+    _updateItem: function(listItem) {
+      var p = 'listItems.' + this.listItems.indexOf(listItem) + '.';
+      for (var i in listItem) {
+        if (listItem.hasOwnProperty(i)) {
+          this.notifyPath(p + i, listItem[i]);
+        }
+      }
+    }
+});
 </script>
