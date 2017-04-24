@@ -26,14 +26,12 @@ common/abstract rules go in px-inbox-sketch.scss, not in this file.
 // Component
 
 .list {
-  // border-right: 1px solid var(--px-inbox-border-color, $gray6);
   border-right: 1px solid #d9e1e6;
 }
 .subtitle, .info {
   color: var(--px-inbox-secondary-text-color, $gray6);
 }
 .list-ui__item {
-  // border-bottom-color: var(--px-inbox-border-color, $gray6);
   border-bottom-color: #d9e1e6;
   background-color: var(--px-inbox-li-background-color, $white);
 }
