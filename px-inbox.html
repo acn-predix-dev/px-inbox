@@ -101,7 +101,7 @@ Custom property | Description | Default
               </div>
             </div>
           </li>
-          <template is="dom-repeat" items="{{listItems}}" as="listItem" filter="{{_computeFilter(_query)}}" sort="{{_computeSort(sortBy)}}">
+          <template is="dom-repeat" items="{{listItems}}" as="listItem">
             <li class="list-ui__item pointer">
               <div class="flex flex--justify">
                 <div class="flex flex--left">
@@ -120,7 +120,7 @@ Custom property | Description | Default
                       <span class="subtitle">Cancelled</span>
                     </template>
                     <template is="dom-if" if="{{listItem.disruption.delay}}">
-                      <span class="subtitle">Delay </span><span class="title">{{_getDuration(listItem.disruption.delay.minutes)}}</span>
+                      <span class="subtitle">Delay </span><span class="title">{{_getDuration(listItem.disruption.delay.departureDelayMinutes)}}</span>
                     </template>
                     <br/>
                     <span class="subtitle">Impacted </span><span class="title">{{_formatImpacted(listItem)}}</span>
@@ -366,7 +366,7 @@ Custom property | Description | Default
     },
 
     _getDuration: function(minutes) {
-      return moment.duration(minutes, "minutes").format("hh:mm");
+      return moment.duration(minutes, "minutes").format("hh:mm", { trim: false });
     },
 
     _formatStation: function(station) {
