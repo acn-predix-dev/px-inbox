@@ -113,6 +113,9 @@ $inuit-enable-margins--small: true;
 @import "px-spacing-design/_trumps.spacing.scss";
 @import "px-widths-design/_trumps.widths.scss";
 
+@import 'px-actionable-text-icons-design/_objects.actionable.scss';
+
+
 .disrupted-flight-row {
   padding-right: 30px;
 }
@@ -152,7 +155,7 @@ $inuit-enable-margins--small: true;
   position: relative;
 }
 
-.px-inbox-checkbox:checked + label:after {
+.px-inbox-checkbox:checked {
   background-color: #008FD5;
 }
 

@@ -135,7 +135,9 @@ Custom property | Description | Default
         </ul>
       </div>
       <div id="detail" class="detail u-5/6-desk u-3/4-lap">
-        <content></content>
+        <content>
+          <px-inbox-content></px-inbox-content>
+        </content>
       </div>
     </div>
 
@@ -164,8 +166,7 @@ Custom property | Description | Default
       * @property listItems
       */
       listItems: {
-        type: Array,
-        observer: '_formatDates'
+        type: Array
       },
       /**
       * ID of the selected item, for pulling up the details to display in the right side of the inbox view.
