@@ -470,8 +470,9 @@ Custom property | Description | Default
       for (var i = 0; i < this.listItems.length; i++) {
         this.listItems[i].checked = this.isSelectedAll;
         this._updateItem(this.listItems[i]);
-        if (this.isSelectedAll) {
-          this.push("selectedItems", this.listItems[i].flightID);
+        var flightId = this.listItems[i].flightID;
+        if (this.isSelectedAll && (this.selectedItems.indexOf(flightId) == -1)) {
+          this.push("selectedItems", flightId);
         }
       }
 
