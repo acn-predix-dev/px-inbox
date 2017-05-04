@@ -10,7 +10,7 @@
 <script src="../moment/moment.js"></script>
 <script src="../lodash/lodash.js"></script>
 <script src="../moment-duration-format/lib/moment-duration-format.js"></script>
-
+<link rel="import" href="px-inbox-content.html"/>
 <!--
 
 ##### Usage
@@ -46,8 +46,6 @@ Custom property | Description | Default
     <style include="px-inbox-styles"></style>
     <div id="container" class="container flex">
       <div id="list" class="list u-1/6-desk u-1/4-lap">
-
-
         <ul class="list-ui list-ui--small">
           <li style="border: 0px; height: 40px;">
             <div class="flex flex--justify">
@@ -74,29 +72,15 @@ Custom property | Description | Default
             <div class="flex flex--justify">
               <div class="flex flex--left">
                 <div class="disrupted-flight-row flex__item flex__item--bottom">
-                  <input class="px-inbox-checkbox" type="checkbox" on-change="_selectAll" checked="{{isSelectedAll::change}}" />
+                  <input class="px-inbox-checkbox" type="checkbox" checked="{{isSelectedAll::change}}" on-change="_selectAll" />
                 </div>
                 <div class="text disrupted-flight-row flex__item flex__item--bottom">
                   <template is="dom-if" if="{{isSolveEnabled}}">
-                    <button class="btn btn--tertiary">Solve</button>
+                    <button class="btn btn--tertiary" on-click="_solve">Solve</button>
                   </template>
                   <template is="dom-if" if="{{!isSolveEnabled}}">
                     <button class="btn btn--disabled">Solve</button>
                   </template>
-                </div>
-              </div>
-              <div class="flex flex--right">
-                <div class="text disrupted-flight-row" style="padding-right: 10px">
-                  <span class="subtitle legend-text">
-                    Terminating
-                    <br>
-                    Connecting
-                    <br>
-                    Misconnecting
-                  </span>
-                </div>
-                <div>
-                  <px-simple-bar-chart width='10' height='35' chart-data='[[10],[10],[10]]' colors='["#b277b1","#5fa5d8","#61bc68"]' legend-labels='[]' legend-order="reverse"></px-simple-bar-chart>
                 </div>
               </div>
             </div>
@@ -104,30 +88,27 @@ Custom property | Description | Default
           <template is="dom-repeat" items="{{listItems}}" as="listItem">
             <li class="list-ui__item pointer">
               <div class="flex flex--justify">
-                <div class="flex flex--left">
-                  <div class="disrupted-flight-row flex__item flex__item--middle">
-                    <input id="{{listItem.flightID}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}" on-change="_addSelectedItem" />
-                  </div>
-                  <div class="text disrupted-flight-row">
-                    <span class$="title {{_getColor(listItem)}}" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
-                    <br/>
-                    <span class="subtitle">{{_formatDate(listItem)}}</span>
-                  </div>
-                  <div class="text disrupted-flight-row">
-                    <span class="subtitle">{{_formatStation(listItem.flightDetails.origin)}} - {{_formatStation(listItem.flightDetails.destination)}}</span>
-                    <br/>
-                    <template is="dom-if" if="{{listItem.disruption.cancel}}">
-                      <span class="subtitle">Cancelled</span>
-                    </template>
-                    <template is="dom-if" if="{{listItem.disruption.delay}}">
-                      <span class="subtitle">Delay </span><span class="title">{{_getDuration(listItem.disruption.delay.departureDelayMinutes)}}</span>
-                    </template>
-                    <br/>
-                    <span class="subtitle">Impacted </span><span class="title">{{_formatImpacted(listItem)}}</span>
-                  </div>
+                <div class="u-1/6 flex__item flex__item--middle">
+                  <input id="{{listItem.flightID}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}" on-change="_addSelectedItem" />
                 </div>
-                <div class="flex flex--right">
-                  <px-simple-bar-chart width='15' height='55' chart-data='{{_buildChartData(listItem)}}' colors='["#b277b1","#5fa5d8","#61bc68"]' legend-labels='[]' legend-order="reverse"></px-simple-bar-chart>
+                <div class="text u-2/6">
+                  <span class$="title {{_getColor(listItem)}}" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
+                  <br/>
+                  <span class="subtitle">{{_formatDate(listItem)}}</span>
+                  <br/>
+                  <span class="subtitle">{{_formatImpacted(listItem)}}</span>
+                </div>
+                <div class="text u-3/6">
+                  <span class="subtitle">{{_formatStation(listItem.flightDetails.origin)}} - {{_formatStation(listItem.flightDetails.destination)}}</span>
+                  <br/>
+                  <template is="dom-if" if="{{listItem.disruption.cancel}}">
+                    <span class="subtitle">Cancelled</span>
+                  </template>
+                  <template is="dom-if" if="{{listItem.disruption.delay}}">
+                    <span class="subtitle">Delay </span><span class="title">{{_getDuration(listItem.disruption.delay.departureDelayMinutes)}}</span>
+                  </template>
+                  <br/>
+                  <span class="subtitle">Misconx </span><span class="title">{{_formatMisconnects(listItem)}}</span>
                 </div>
               </div>
             </li>
@@ -136,7 +117,7 @@ Custom property | Description | Default
       </div>
       <div id="detail" class="detail u-5/6-desk u-3/4-lap">
         <content>
-          <px-inbox-content></px-inbox-content>
+          <px-inbox-content list-items="{{solutionItems}}"></px-inbox-content>
         </content>
       </div>
     </div>
@@ -166,6 +147,10 @@ Custom property | Description | Default
       * @property listItems
       */
       listItems: {
+        type: Array
+      },
+
+      solutionItems: {
         type: Array
       },
       /**
@@ -198,7 +183,7 @@ Custom property | Description | Default
       */
       height: {
         type: String,
-        value: "100vh",
+        //value: "100vh",
         observer: "_updateHeight"
       },
 
@@ -226,8 +211,8 @@ Custom property | Description | Default
       isSelectedAll: {
         type: Boolean,
         value: false,
-        notify: true,
-        observer: '_selectAll'
+        notify: true
+//        observer: '_selectAll'
       }
     },
 
@@ -345,25 +330,39 @@ Custom property | Description | Default
     },
 
     _formatDate: function(listItem) {
-      var date = listItem.flightDetails.departureTimeEst == null ? null : listItem.flightDetails.departureTimeEst.$date;
-      if (date == null || !this._isValidDate(date)) {
-        date = listItem.flightDetails.departureTimeSch == null ? null : listItem.flightDetails.departureTimeSch.$date;
-      }
-
-      return moment(date).utc().format('HH:mm/DD');
+      return moment(listItem.flightDetails.getBestDeptTime()).format('HH:mm/DD');
     },
 
     _formatImpacted: function(listItem) {
       var impactedString = '';
-      if (listItem.flightDetails.businessCompartmentPax != null && listItem.flightDetails.businessCompartmentPax > 0) {
+
+      var businessCompartmentPax = listItem.flightDetails.businessCompartmentPax;
+      if (businessCompartmentPax != null) {
           impactedString += "J" + listItem.flightDetails.businessCompartmentPax;
       }
 
-      if (listItem.flightDetails.coachCompartmentPax != null && listItem.flightDetails.coachCompartmentPax > 0) {
-        impactedString += "Y" + listItem.flightDetails.coachCompartmentPax;
+      var coachCompartmentPax = listItem.flightDetails.coachCompartmentPax;
+      if (coachCompartmentPax != null) {
+        impactedString += "Y" + coachCompartmentPax;
       }
 
       return impactedString;
+    },
+
+    _formatMisconnects: function(listItem) {
+      var misconnects = '';
+
+      var businessClassCount = listItem.misconnectingPax.businessClassCount;
+      if (businessClassCount != null) {
+        misconnects += "J" + businessClassCount;
+      }
+
+      var coachClassCount = listItem.misconnectingPax.coachClassCount;
+      if (coachClassCount != null) {
+        misconnects += "Y" + coachClassCount;
+      }
+
+      return misconnects;
     },
 
     _getDuration: function(minutes) {
@@ -447,6 +446,7 @@ Custom property | Description | Default
         var index = this.selectedItems.indexOf(evt.currentTarget.id);
         this.splice('selectedItems', index, 1);
       }
+
       this._enableSolve();
 
       if (this.selectedItems.length == this.listItems.length) {
@@ -460,11 +460,12 @@ Custom property | Description | Default
     if (this.selectedItems != null && this.selectedItems.length > 0) {
       this.isSolveEnabled = true;
     } else {
-        this.isSolveEnabled = false;
+      this.isSolveEnabled = false;
     }
   },
 
-  _selectAll: function() {
+  _selectAll: function(evt) {
+    this.isSelectedAll = !this.isSelectedAll;
     if (this.listItems != null && this.listItems.length > 0) {
       for (var i = 0; i < this.listItems.length; i++) {
         this.listItems[i].checked = this.isSelectedAll;
@@ -489,6 +490,10 @@ Custom property | Description | Default
           this.notifyPath(p + i, listItem[i]);
         }
       }
+    },
+
+    _solve: function() {
+      this.fire('solve');
     }
 });
 </script>
