@@ -85,7 +85,7 @@ Custom property | Description | Default
                   <br/>
                   <span class="subtitle">Lateness +{{ _computeLateness(listItem)}}</span>
                   <br/>
-                  <span class="subtitle">PAX: {{ _getPaxCount(listItem) }} </span><span class="subtitle">SSR: {{ _getSSRCount(listItem)}} </span><span class="subtitle">FF: {{ _getPrimaryFrequentFlyer(listItem) }}</span>
+                  <span class="subtitle">PAX: {{ _getPaxCount(listItem) }} </span><span class="subtitle">SSR: {{ _hasSSR(listItem)}} </span><span class="subtitle">FF: {{ _getPrimaryFrequentFlyer(listItem) }}</span>
                 </div>
                 <div class="text solution-item-row solution-item-itinerary flex__item--top">
                   <div class="current flex">
@@ -170,8 +170,8 @@ Custom property | Description | Default
       }
     },
 
-    _getSSRCount: function(listItem) {
-      return listItem.getSSRCount();
+    _hasSSR: function(listItem) {
+      return listItem.hasSSR();
     },
 
     _getPaxCount: function(listItem) {
