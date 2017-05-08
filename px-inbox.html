@@ -160,7 +160,9 @@ Custom property | Description | Default
       },
 
       solutionItems: {
-        type: Array
+        type: Array,
+        observer: '_changeHasSolutions',
+        notify: true
       },
 
       selectedItems: {
@@ -185,12 +187,6 @@ Custom property | Description | Default
       },
 
       isSelectedAll: {
-        type: Boolean,
-        value: false,
-        notify: true
-      },
-
-      hasSolutions: {
         type: Boolean,
         value: false,
         notify: true
@@ -420,6 +416,14 @@ Custom property | Description | Default
         tempListItems.push(this.listItemsMap[keys[i]]);
       }
       this.set("listItems", tempListItems);
+    },
+
+    _changeHasSolutions: function() {
+      if (this.solutionItems != null && this.solutionItems.length > 0) {
+        this.hasSolutions = true;
+      } else {
+        this.hasSolutions = false;
+      }
     }
 });
 </script>
