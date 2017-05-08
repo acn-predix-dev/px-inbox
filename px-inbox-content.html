@@ -45,7 +45,11 @@ Custom property | Description | Default
     <style include="px-inbox-styles"></style>
     <div id="container" class="container flex flex--col">
       <div id="flights-pane" >
-
+        <template is="dom-repeat" items="{{selectedItems}}" as="selectedItem">
+          <div>
+            {{selectedItem.flightID}}
+          </div>
+        </template>
       </div>
       <div id="solution-window">
         <ul class="list-ui list-ui--huge">
@@ -166,7 +170,19 @@ Custom property | Description | Default
        * @property listItems
        */
       listItems: {
-        type: Array
+        type: Array,
+        value: function() {
+          return [];
+        },
+        notify: true
+      },
+
+      selectedItems: {
+        type: Array,
+        value: function() {
+          return [];
+        },
+        notify: true
       }
     },
 
