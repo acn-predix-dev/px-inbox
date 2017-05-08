@@ -146,8 +146,16 @@ Custom property | Description | Default
       * - date (optional, should be valid <a href="https://www.w3.org/TR/NOTE-datetime">8601 date strings</a>)
       * @property listItems
       */
+      /*listItemsMap: {
+        type: Object,
+        notify: true,
+        observer: '_arrangeListItems'
+      },*/
+
       listItems: {
-        type: Array
+        type: Array,
+        notify: true
+//        observer: '_sort'
       },
 
       solutionItems: {
@@ -215,6 +223,13 @@ Custom property | Description | Default
 //        observer: '_selectAll'
       }
     },
+    /*observers: [
+      '_updateDisruptedFlights(listItems.splices)'
+    ],
+
+    _updateDisruptedFlights: function(changeRecord) {
+      this._sort();
+    },*/
 
     /**
     * Figures out whether the item is currently selected.
@@ -387,7 +402,11 @@ Custom property | Description | Default
     },
     _getColor: function(listItem) {
       if (listItem.disruption.delay != null) {
-        return "delayed";
+        if (listItem.disruption.delay.departureDelayMinutes > 15 && listItem.disruption.delay.departureDelayMinutes < 180) {
+          return "delayed-15";
+        } else {
+          return "delayed-3"
+        }
       }
       else {
         return "cancelled";
@@ -395,12 +414,13 @@ Custom property | Description | Default
     },
     _sort: function() {
       if (this.listItems != null && this.listItems.length > 0) {
-        this.listItems = _.orderBy(this.listItems, [
+        var tempList = _.orderBy(this.listItems, [
+//        this.listItems = _.orderBy(this.listItems, [
           function (item) {
             return item.flightDetails.getBestDeptTime();
           },
           function (item) {
-            return item.totalImpactedPax;
+            return item.totalImpactedPax.totalCount;
           },
           function (item) {
             return item.flightDetails.businessCompartmentCount;
@@ -440,10 +460,11 @@ Custom property | Description | Default
     },
 
     _addSelectedItem: function (evt) {
+      var index = this.selectedItems.indexOf(evt.currentTarget.id);
       if (evt.currentTarget.checked) {
         this.push("selectedItems", evt.currentTarget.id);
       } else {
-        var index = this.selectedItems.indexOf(evt.currentTarget.id);
+
         this.splice('selectedItems', index, 1);
       }
 
@@ -495,6 +516,15 @@ Custom property | Description | Default
 
     _solve: function() {
       this.fire('solve');
-    }
+    },
+
+    _arrangeListItems: function() {
+      var tempListItems = [];
+      var keys = Object.keys(this.listItemsMap);
+      for (var i = 0; i < keys.length; i++) {
+        tempListItems.push(this.listItemsMap[keys[i]]);
+      }
+      this.set("listItems", tempListItems);
+    },
 });
 </script>
