@@ -52,10 +52,10 @@ Custom property | Description | Default
               <div class="flex flex--left">
                 <span class="subtitle" style="color: #8c8c8d; padding-right: 10px">Sort by:</span>
                 <template is="dom-if" if="{{!isReverse}}">
-                  <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_toggleSort"><i class="fa fa-arrow-circle-up" aria-hidden="true"></i></span>
+                  <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class="fa fa-arrow-circle-up" aria-hidden="true"></i></span>
                 </template>
                 <template is="dom-if" if="{{isReverse}}">
-                  <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_toggleSort"><i class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
+                  <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
                 </template>
 
                 <span class="subtitle" style="color:#129ec2">Departure Time</span>
@@ -92,11 +92,16 @@ Custom property | Description | Default
                   <input id="{{listItem.flightID}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}" on-change="_addSelectedItem" />
                 </div>
                 <div class="text u-2/6">
-                  <span class$="title {{_getColor(listItem)}}" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
+                  <template is="dom-if" if="{{listItem.disruption.cancel}}">
+                    <span class="title cancelled" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
+                  </template>
+                  <template is="dom-if" if="{{listItem.disruption.delay}}">
+                    <span class$="title {{_getDelayedColor(listItem.disruption.delay.departureDelayMinutes)}}" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
+                  </template>
                   <br/>
-                  <span class="subtitle">{{_formatDate(listItem)}}</span>
+                  <span class="subtitle">{{listItem.flightDetails.bestAvailDeptTimeStr }}</span>
                   <br/>
-                  <span class="subtitle">{{_formatImpacted(listItem)}}</span>
+                  <span class="subtitle">{{_formatImpacted(listItem.flightDetails.businessCompartmentPax, listItem.flightDetails.coachCompartmentPax)}}</span>
                 </div>
                 <div class="text u-3/6">
                   <span class="subtitle">{{_formatStation(listItem.flightDetails.origin)}} - {{_formatStation(listItem.flightDetails.destination)}}</span>
@@ -108,7 +113,7 @@ Custom property | Description | Default
                     <span class="subtitle">Delay </span><span class="title">{{_getDuration(listItem.disruption.delay.departureDelayMinutes)}}</span>
                   </template>
                   <br/>
-                  <span class="subtitle">Misconx </span><span class="title">{{_formatMisconnects(listItem)}}</span>
+                  <span class="subtitle">Misconx </span><span class="title">{{_formatMisconnects(listItem.misconnectingPax.businessClassCount, listItem.misconnectingPax.coachClassCount)}}</span>
                 </div>
               </div>
             </li>
@@ -116,11 +121,9 @@ Custom property | Description | Default
         </ul>
       </div>
       <div id="detail" class="detail u-5/6-desk u-3/4-lap">
-        <!--<content>-->
           <template is="dom-if" if="{{hasSolutions}}">
             <px-inbox-content list-items="{{solutionItems}}" selected-items="{{selectedDisruptedFlights}}"></px-inbox-content>
           </template>
-        <!--</content>-->
       </div>
     </div>
 
@@ -176,8 +179,7 @@ Custom property | Description | Default
       isReverse: {
         type: Boolean,
         value: false,
-        notify: true,
-        observer: '_sort'
+        notify: true
       },
 
       isSolveEnabled: {
@@ -235,19 +237,13 @@ Custom property | Description | Default
       }
     },
 
-    _formatDate: function(listItem) {
-      return moment(listItem.flightDetails.getBestDeptTime()).format('HH:mm/DD');
-    },
-
-    _formatImpacted: function(listItem) {
+    _formatImpacted: function(businessCompartmentPax, coachCompartmentPax) {
       var impactedString = '';
 
-      var businessCompartmentPax = listItem.flightDetails.businessCompartmentPax;
       if (businessCompartmentPax != null) {
-          impactedString += "J" + listItem.flightDetails.businessCompartmentPax;
+          impactedString += "J" + businessCompartmentPax;
       }
 
-      var coachCompartmentPax = listItem.flightDetails.coachCompartmentPax;
       if (coachCompartmentPax != null) {
         impactedString += "Y" + coachCompartmentPax;
       }
@@ -255,15 +251,13 @@ Custom property | Description | Default
       return impactedString;
     },
 
-    _formatMisconnects: function(listItem) {
+    _formatMisconnects: function(businessClassCount, coachClassCount) {
       var misconnects = '';
 
-      var businessClassCount = listItem.misconnectingPax.businessClassCount;
       if (businessClassCount != null) {
         misconnects += "J" + businessClassCount;
       }
 
-      var coachClassCount = listItem.misconnectingPax.coachClassCount;
       if (coachClassCount != null) {
         misconnects += "Y" + coachClassCount;
       }
@@ -279,74 +273,33 @@ Custom property | Description | Default
       return station.substr(3, 7);
     },
 
-    _buildChartData: function(listItem) {
-      var chartData = [
-        [listItem.terminatingPax.totalCount],
-        [listItem.connectingPax.totalCount],
-        [listItem.misconnectingPax.totalCount]
-      ];
-      return chartData;
-    },
     _isValidDate: function(date) {
       var minDate = moment.utc("0001-01-01");
       return moment.utc(date).isAfter(minDate);
     },
-    _getColor: function(listItem) {
-      if (listItem.disruption.delay != null) {
-        if (listItem.disruption.delay.departureDelayMinutes > 15 && listItem.disruption.delay.departureDelayMinutes < 180) {
+
+    _getDelayedColor: function(departureDelayMinutes) {
+        if (departureDelayMinutes > 15 && departureDelayMinutes < 180) {
           return "delayed-15";
-        } else {
+        } else if (departureDelayMinutes >= 180) {
           return "delayed-3"
         }
-      }
-      else {
-        return "cancelled";
-      }
     },
     _sort: function() {
       if (this.listItems != null && this.listItems.length > 0) {
-        this.listItems = _.orderBy(this.listItems, [
-          function (item) {
-            return item.flightDetails.getBestDeptTime();
-          },
-          function (item) {
-            return item.totalImpactedPax.totalCount;
-          },
-          function (item) {
-            return item.flightDetails.businessCompartmentCount;
-          },
-          function (item) {
-            return item.flightDetails.flightNumber;
-          }
-        ], [this._getOrder(), "asc", "asc", "asc"]);
+        this._toggleSort();
+        this.listItems = this.listItems.reverse()
+        this.listItems = this.listItems.slice();
+//        this.set("listItems", this.listItems);
       }
     },
 
     _getOrder: function() {
-      if (this.isReverse) {
-          return "desc";
-      }
-      return "asc";
+      return this.isReverse;
     },
 
     _toggleSort: function() {
       this.isReverse = !this.isReverse;
-    },
-
-    _getBestDeptTime: function(listItem) {
-      return this._getBestAvailableTime(listItem.flightDetails.departureTimeEst.$date, listItem.flightDetails.departureTimeSch.$date);
-    },
-
-    _getBestArrTime: function(listItem) {
-      return this._getBestAvailableTime(listItem.flightDetails.arrivalTimeEst.$date, listItem.flightDetails.arrivalTimeSch.$date);
-    },
-
-    _getBestAvailableTime: function(estimated, scheduled){
-      var bestAvailableTime = estimated;
-      if (bestAvailableTime == null || !this._isValidDate(bestAvailableTime)) {
-        bestAvailableTime = scheduled;
-      }
-      return moment(bestAvailableTime).utc().format('HH:mm/DD');
     },
 
     _addSelectedItem: function (evt) {
