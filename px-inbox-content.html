@@ -43,38 +43,36 @@ Custom property | Description | Default
 <dom-module id="px-inbox-content">
   <template>
     <style include="px-inbox-styles"></style>
-    <div id="container" class="container flex flex--col">
-      <div id="flights-pane" >
+    <div class="flex flex--col">
+      <div id="flights-pane" class="flex flex--justify">
         <!--<template is="dom-repeat" items="{{selectedItems}}" as="selectedItem">
         </template>-->
       </div>
+      <div id="solution-window-header" class="flex flex--justify">
+        <div class="solution-item-row solution-item-checkbox flex__item--middle">
+          <input class="px-inbox-checkbox" type="checkbox" />
+        </div>
+        <div class="text solution-item-row solution-item-pnr flex__item--middle">
+          <span>PNR</span>
+        </div>
+        <div class="text solution-item-row solution-item-itinerary flex__item--middle">
+          <span>Itinerary</span>
+        </div>
+        <div class="text solution-item-row solution-item-commit flex__item--middle">
+          <span><button class="btn btn--tertiary">Commit All</button></span>
+        </div>
+        <div class="text solution-item-row solution-item-notify flex__item--middle">
+          <span><button class="btn btn--tertiary">Notify All</button></span>
+        </div>
+        <div class="text solution-item-row solution-item-color flex__item--middle">
+          <span class="fa-stack fa-md">
+            <i class="fa fa-circle-o fa-stack-2x" style="font-size: 1.7rem;"></i>
+            <i class="fa fa-filter fa-stack-1x" style="font-size: 0.8rem; bottom:7;"></i>
+          </span>
+        </div>
+      </div>
       <div id="solution-window">
         <ul class="list-ui list-ui--huge">
-          <li class="list-ui__item pointer">
-            <div class="flex flex--justify">
-              <div class="solution-item-row solution-item-checkbox flex__item--middle">
-                <input class="px-inbox-checkbox" type="checkbox" />
-              </div>
-              <div class="text solution-item-row solution-item-pnr flex__item--middle">
-                <span>PNR</span>
-              </div>
-              <div class="text solution-item-row solution-item-itinerary flex__item--middle">
-                <span>Itinerary</span>
-              </div>
-              <div class="text solution-item-row solution-item-commit flex__item--middle">
-                <span><button class="btn btn--tertiary">Commit All</button></span>
-              </div>
-              <div class="text solution-item-row solution-item-notify flex__item--middle">
-                <span><button class="btn btn--tertiary">Notify All</button></span>
-              </div>
-              <div class="text solution-item-row solution-item-color flex__item--middle">
-                  <span class="fa-stack fa-md">
-                    <i class="fa fa-circle-o fa-stack-2x" style="font-size: 1.7rem;"></i>
-                    <i class="fa fa-filter fa-stack-1x" style="font-size: 0.8rem; bottom:7;"></i>
-                  </span>
-              </div>
-            </div>
-          </li>
           <template is="dom-repeat" items="{{listItems}}" as="listItem">
             <li class="list-ui__item pointer">
               <div class="flex flex--justify">

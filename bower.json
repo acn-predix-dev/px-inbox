@@ -33,7 +33,8 @@
     "px-button-group-design": "^1.0.7",
     "moment-duration-format": "^1.3.0",
     "px-table-view": "^2.0.7",
-    "px-actionable-text-icons-design": "^1.1.8"
+    "px-actionable-text-icons-design": "^1.1.8",
+    "px-buttons-design": "^1.1.8"
   },
   "devDependencies": {
     "px-starter-kit-design": "^0.7.1",

@@ -46,87 +46,83 @@ Custom property | Description | Default
     <style include="px-inbox-styles"></style>
     <div id="container" class="container flex">
       <div id="list" class="list u-1/6-desk u-1/4-lap">
-        <ul class="list-ui list-ui--small">
-          <li style="border: 0px; height: 40px;">
-            <div class="flex flex--justify">
-              <div class="flex flex--left">
-                <span class="subtitle" style="color: #8c8c8d; padding-right: 10px">Sort by:</span>
-                <template is="dom-if" if="{{!isReverse}}">
-                  <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class="fa fa-arrow-circle-up" aria-hidden="true"></i></span>
-                </template>
-                <template is="dom-if" if="{{isReverse}}">
-                  <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
-                </template>
-
-                <span class="subtitle" style="color:#129ec2">Departure Time</span>
-              </div>
-              <div class="flex flex--right">
-                <span class="fa-stack fa-md">
-                  <i class="fa fa-circle-o fa-stack-2x" style="font-size: 1.7rem;"></i>
-                  <i class="fa fa-filter fa-stack-1x" style="font-size: 0.8rem; bottom:7;"></i>
-                </span>
-              </div>
+        <div class="flex flex--justify" style="height: 5vh; padding: .66667rem;">
+          <div class="flex flex--left">
+            <span class="subtitle" style="color: #8c8c8d; padding-right: 10px">Sort by:</span>
+            <template is="dom-if" if="{{!isReverse}}">
+              <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class="fa fa-arrow-circle-up" aria-hidden="true"></i></span>
+            </template>
+            <template is="dom-if" if="{{isReverse}}">
+              <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
+            </template>
+            <span class="subtitle" style="color:#129ec2">Departure Time</span>
+          </div>
+          <div class="flex flex--right">
+            <span class="fa-stack fa-md">
+              <i class="fa fa-circle-o fa-stack-2x" style="font-size: 1.7rem;"></i>
+              <i class="fa fa-filter fa-stack-1x" style="font-size: 0.8rem; bottom:7;"></i>
+            </span>
+          </div>
+        </div>
+        <div class="flex flex--justify" style="height: 5vh; padding: .66667rem; border-bottom: 1px solid #b6c3cc;">
+          <div class="flex flex--left">
+            <div class="disrupted-flight-row flex__item flex__item--bottom">
+              <input class="px-inbox-checkbox" type="checkbox" checked="{{isSelectedAll::change}}" on-change="_selectAll" />
             </div>
-          </li>
-          <li style="border-top: 0px">
-            <div class="flex flex--justify">
-              <div class="flex flex--left">
-                <div class="disrupted-flight-row flex__item flex__item--bottom">
-                  <input class="px-inbox-checkbox" type="checkbox" checked="{{isSelectedAll::change}}" on-change="_selectAll" />
-                </div>
-                <div class="text disrupted-flight-row flex__item flex__item--bottom">
-                  <template is="dom-if" if="{{isSolveEnabled}}">
-                    <button class="btn btn--tertiary" on-click="_solve">Solve</button>
-                  </template>
-                  <template is="dom-if" if="{{!isSolveEnabled}}">
-                    <button class="btn btn--disabled">Solve</button>
-                  </template>
-                </div>
-              </div>
+            <div class="text disrupted-flight-row flex__item flex__item--bottom">
+              <template is="dom-if" if="{{isSolveEnabled}}">
+                <button class="btn btn--tertiary" on-click="_solve">Solve</button>
+              </template>
+              <template is="dom-if" if="{{!isSolveEnabled}}">
+                <button class="btn btn--disabled">Solve</button>
+              </template>
             </div>
-          </li>
-          <template is="dom-repeat" items="{{listItems}}" as="listItem">
-            <li class="list-ui__item pointer">
-              <div class="flex flex--justify">
-                <div class="u-1/6 flex__item flex__item--middle">
-                  <input id="{{listItem.flightID}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}" on-change="_addSelectedItem" />
+          </div>
+        </div>
+        <div class="disruption-scrollable">
+          <ul class="list-ui list-ui--small">
+            <template is="dom-repeat" items="{{listItems}}" as="listItem">
+              <li class="list-ui__item pointer disruption-items">
+                <div class="flex flex--justify">
+                  <div class="u-1/6 flex__item flex__item--middle">
+                    <input id="{{listItem.flightID}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}" on-change="_addSelectedItem" />
+                  </div>
+                  <div class="text u-2/6">
+                    <template is="dom-if" if="{{listItem.disruption.cancel}}">
+                      <span class="title cancelled" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
+                    </template>
+                    <template is="dom-if" if="{{listItem.disruption.delay}}">
+                      <span class$="title {{_getDelayedColor(listItem.disruption.delay.departureDelayMinutes)}}" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
+                    </template>
+                    <br/>
+                    <span class="subtitle">{{listItem.flightDetails.bestAvailDeptTimeStr }}</span>
+                    <br/>
+                    <span class="subtitle">{{_formatImpacted(listItem.flightDetails.businessCompartmentPax, listItem.flightDetails.coachCompartmentPax)}}</span>
+                  </div>
+                  <div class="text u-3/6">
+                    <span class="subtitle">{{_formatStation(listItem.flightDetails.origin)}} - {{_formatStation(listItem.flightDetails.destination)}}</span>
+                    <br/>
+                    <template is="dom-if" if="{{listItem.disruption.cancel}}">
+                      <span class="subtitle">Cancelled</span>
+                    </template>
+                    <template is="dom-if" if="{{listItem.disruption.delay}}">
+                      <span class="subtitle">Delay </span><span class="title">{{_getDuration(listItem.disruption.delay.departureDelayMinutes)}}</span>
+                    </template>
+                    <br/>
+                    <span class="subtitle">Misconx </span><span class="title">{{_formatMisconnects(listItem.misconnectingPax.businessClassCount, listItem.misconnectingPax.coachClassCount)}}</span>
+                  </div>
                 </div>
-                <div class="text u-2/6">
-                  <template is="dom-if" if="{{listItem.disruption.cancel}}">
-                    <span class="title cancelled" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
-                  </template>
-                  <template is="dom-if" if="{{listItem.disruption.delay}}">
-                    <span class$="title {{_getDelayedColor(listItem.disruption.delay.departureDelayMinutes)}}" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
-                  </template>
-                  <br/>
-                  <span class="subtitle">{{listItem.flightDetails.bestAvailDeptTimeStr }}</span>
-                  <br/>
-                  <span class="subtitle">{{_formatImpacted(listItem.flightDetails.businessCompartmentPax, listItem.flightDetails.coachCompartmentPax)}}</span>
-                </div>
-                <div class="text u-3/6">
-                  <span class="subtitle">{{_formatStation(listItem.flightDetails.origin)}} - {{_formatStation(listItem.flightDetails.destination)}}</span>
-                  <br/>
-                  <template is="dom-if" if="{{listItem.disruption.cancel}}">
-                    <span class="subtitle">Cancelled</span>
-                  </template>
-                  <template is="dom-if" if="{{listItem.disruption.delay}}">
-                    <span class="subtitle">Delay </span><span class="title">{{_getDuration(listItem.disruption.delay.departureDelayMinutes)}}</span>
-                  </template>
-                  <br/>
-                  <span class="subtitle">Misconx </span><span class="title">{{_formatMisconnects(listItem.misconnectingPax.businessClassCount, listItem.misconnectingPax.coachClassCount)}}</span>
-                </div>
-              </div>
-            </li>
-          </template>
-        </ul>
+              </li>
+            </template>
+          </ul>
+        </div>
       </div>
       <div id="detail" class="detail u-5/6-desk u-3/4-lap">
-          <template is="dom-if" if="{{hasSolutions}}">
-            <px-inbox-content list-items="{{solutionItems}}" selected-items="{{selectedDisruptedFlights}}"></px-inbox-content>
-          </template>
+        <template is="dom-if" if="{{hasSolutions}}">
+          <px-inbox-content list-items="{{solutionItems}}" selected-items="{{selectedDisruptedFlights}}"></px-inbox-content>
+        </template>
       </div>
     </div>
-
   </template>
 </dom-module>
 
