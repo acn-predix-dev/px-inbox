@@ -187,9 +187,9 @@ $inuit-enable-margins--small: true;
   background-color: white;
 }
 
-.disruption-items {
-  height: 8vh;
-}
+// .disruption-items {
+//   height: 8vh;
+// }
 
 .legend-text {
   font-size: x-small;
@@ -282,4 +282,42 @@ $inuit-enable-margins--small: true;
   padding: 1rem;
   height:8vh;
   border-bottom: 1px solid #b6c3cc;
+}
+
+// PIE/DONUT CHART
+:host ::content #popoverWrapper {
+    height: 0px;
+}
+
+:host ::content #popover.px-popover {
+    height: 0px;
+}
+
+:host ::content #register {
+    position: relative;
+    display: flex;
+    align-self: center;
+    right: -200px;
+    order: 1;
+}
+
+:host ::content .px-vis-pie-chart {
+    display: flex;
+    align-self: center;
+}
+
+:host ::content g.title-group > text:first-child {
+    font-size: 14px;
+}
+
+:host ::content g.title-group > text:nth-child(2) {
+    visibility: hidden;
+}
+
+:host ::content div.seriesData {
+    visibility: hidden;
+}
+
+:host ::content .wrapper.px-vis-pie-chart {
+    padding-right: 80px;
 }
