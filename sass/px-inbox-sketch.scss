@@ -7,78 +7,123 @@
  * with the terms and conditions stipulated in the agreement/contract
  * under which the software has been supplied.
  */
-
 //
 // Sass for the "sketch" notion of the px-inbox component
 //
 // @author
 //
-
 /*
 THIS FILE SHOULD CONTAIN ONLY ABSTRACT/'SKETCH' THEME RULES, NOT SPECIFIC TO PREDIX BRANDING
 Predix branding rules go in px-inbox-predix.scss, not in this file.
 */
-
-
-
 // Generic
 @import "px-normalize-design/_generic.normalize.scss";
 @import "px-box-sizing-design/_generic.box-sizing.scss";
 @import "px-helpers-design/_generic.helpers.scss";
-
 // Base
 @import "px-flexbox-design/_base.flexbox.scss";
 @import "px-viewport-design/_base.viewport.scss";
+
+// change 5-10-2017 | start
+// Layout
+$inuit-enable-layout--huge: true;
+$inuit-enable-layout--full: true;
+$inuit-enable-layout--center: true;
+$inuit-enable-layout--tiny: true;
+$inuit-enable-layout--small: true;
+$inuit-enable-layout--large: true;
+$inuit-enable-layout--flush: true;
+$inuit-enable-layout--rev: true;
+$inuit-enable-layout--middle: true;
+$inuit-enable-layout--bottom: true;
+$inuit-enable-layout--right: true;
+$inuit-enable-layout__item--full: true;
+$inuit-enable-layout__item--center: true;
+$inuit-enable-layout__item--bottom: true;
+@import 'px-layout-design/_objects.layout.scss';
+
+// Spacing
+$inuit-enable-responsive-margins: true;
+$inuit-enable-responsive-paddings: true;
+@import 'px-spacing-responsive-design/_trumps.spacing-responsive.scss';
+$inuit-enable-margins: true;
+$inuit-enable-paddings: true;
+@import 'px-spacing-design/_trumps.spacing.scss';
+// Widths
+$inuit-widths-columns-responsive: ( 1, 2, 3, 4, 6, );
+@import "px-widths-responsive-design/_trumps.widths-responsive.scss";
+@import "px-widths-design/_trumps.widths.scss";
+// change 5-10-2017 | end
+
 $inuit-enable-input--tiny: true;
 @import "px-forms-design/_base.forms.scss";
 
+$inuit-enable-btn--tertiary: true;
+$inuit-enable-btn--small: true;
+$inuit-enable-btn--disabled: true;
+@import "px-button-group-design/_objects.button-group.scss";
 
 $inuit-enable-list-ui--small: true;
 @import "px-list-ui-design/_objects.list-ui.scss";
 @import "px-input-group-design/_objects.input-group.scss";
 
-
+$inuit-enable-btn--primary : true;
+$inuit-enable-btn--tertiary : true;
+$inuit-enable-btn--disabled : true;
+$inuit-enable-btn--bare--primary : true;
+@import 'px-buttons-design/_objects.buttons.scss';
 
 // Component
 .container {
-  overflow-y: auto;
+  overflow: hidden;   // change 5-10-2017
+  margin-top: 5vh;    // change 5-10-2017
+  height: 95vh;       // change 5-10-2017
 }
+
 .list {
-  height: 100%;
-  overflow-y: auto;
   min-width: 275px;
 }
+
 .list-ui__item {
   word-wrap: break-word;
   word-break: break-word;
 }
+
 .title {
   font-weight: bold;
 }
+
 .info {
   text-align: right;
 }
+
 px-dropdown {
   margin-top: -2px;
 }
+
 .detail {
   height: 100%;
-  overflow-y: auto;
+  overflow-y: overlay;
 }
+
 .header, .details {
   padding: 1rem;
 }
+
 .svg-canvas {
-    display: none;
+  display: none;
 }
+
 .search-field {
   position: relative;
 }
+
 .search-field .text-input {
   padding-right: 2rem;
   -webkit-appearance: none;
   border-radius: 0px;
 }
+
 .search-icon {
   position: absolute;
   right: 0.3333rem;
@@ -86,6 +131,7 @@ px-dropdown {
   height: 1rem;
   width: 1rem;
 }
+
 .sort-dropdown {
   min-width: 5rem;
   --px-dropdown-bg-color: transparent;
@@ -97,6 +143,7 @@ px-dropdown {
   --px-dropdown-border-color--opened: transparent;
   --px-dropdown-border-color--disabled: transparent;
 }
+
 .sort-dropdown-content {
   font-weight: normal;
 }
@@ -108,6 +155,24 @@ $inuit-enable-margins--tiny: true;
 $inuit-enable-margins--small: true;
 @import "px-spacing-design/_trumps.spacing.scss";
 @import "px-widths-design/_trumps.widths.scss";
+
+@import 'px-actionable-text-icons-design/_objects.actionable.scss';
+
+.disrupted-flight-row {
+  padding-right: 30px;
+}
+
+.delayed-3 {
+  color: red;
+}
+
+.delayed-15 {
+  color: #e8a834;
+}
+
+.cancelled {
+  color: black;
+}
 
 .list-ui {
   border-top-width: 0px;
@@ -122,19 +187,99 @@ $inuit-enable-margins--small: true;
   background-color: white;
 }
 
+.disruption-items {
+  height: 8vh;
+}
+
 .legend-text {
   font-size: x-small;
 }
 
 .px-inbox-checkbox {
   -webkit-appearance: none;
-  background-color: #fdfdfd;
+  background-color: #ffffff;
   border: 1px solid #cacece;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), inset 0px -15px 10px -12px rgba(0, 0, 0, 0.05);
-  padding: 7px;
+  padding: 6px;
   display: inline-block;
   position: relative;
 }
 
-$inuit-enable-btn--tertiary : true;
-@import 'px-buttons-design/_objects.buttons.scss';
+.px-inbox-checkbox:checked {
+  background-color: #008FD5;
+}
+
+.btn--tertiary, .btn--tertiary:active, .btn--tertiary:hover, .btn--tertiary:link, .btn--tertiary:visited {
+  color: #129ec2;
+}
+
+/*START-CHANGES*/
+#flights-pane {
+  background-color: #EFF3F6;
+  height: 10vh;
+  padding: .66667rem
+}
+
+#solution-window {
+  height: 77vh;
+  overflow-y: overlay;
+}
+
+#list {
+  flex: 0 1 auto;
+}
+
+#detail {
+  flex: 1 0 auto;
+}
+
+.solution-item-row {
+  padding-right: 10px;
+}
+
+.solution-item-checkbox {
+  width: 5%
+}
+
+.solution-item-pnr {
+  width: 20%;
+}
+
+.solution-item-itinerary {
+  width: 40%;
+}
+
+.solution-item-commit {
+  width: 15%;
+}
+
+.solution-item-notify {
+  width: 15%;
+}
+
+.solution-item-color {
+  width: 5%;
+}
+
+.terminating {
+  color: #b277b1;
+}
+
+.connecting {
+  color: #5fa5d8;
+}
+
+.misconnecting {
+  color: #61bc68;
+}
+
+.disruption-scrollable {
+  overflow-y: overlay;
+  height: 85vh;
+}
+
+#solution-window-header {
+  padding: 1rem;
+  height:8vh;
+  border-bottom: 1px solid #b6c3cc;
+}

@@ -1,0 +1,229 @@
+<!--
+    Relative paths assume component is being run from inside an app or another component, where dependencies are flat
+    siblings. When this component is run from its own repo (e.g. tests, examples), we assume the server is started with
+    'gulp serve' (or similar server setup) to enable correct finding of bower dependencies for local runs.
+-->
+<link rel="import" href="../polymer/polymer.html"/>
+<link rel="import" href="css/px-inbox-styles.html">
+<link rel="import" href="../px-dropdown/px-dropdown.html" />
+<script src="../moment/moment.js"></script>
+<script src="../lodash/lodash.js"></script>
+<script src="../moment-duration-format/lib/moment-duration-format.js"></script>
+<link rel="import" href="../px-table-view/px-table-view.html" />
+<!--
+
+##### Usage
+
+    <px-inbox height="100vh" list-items='[{"id":"1","title":"GT Vibration","subtitle":"Block 2","severity":"important","date":"2016-10-05T01:29"}]'>
+      // define or bind to detail view here
+    </px-inbox>
+
+### Styling
+The following custom properties are available for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--px-inbox-border-color` | Border color for list items | `$gray6`
+`--px-inbox-secondary-text-color` | Text color for subtitle and date | `$gray6`
+`--px-inbox-li-background-color` | Background color for list items | `$gray1`
+`--px-inbox-li-background-color--selected` | Background color for selected list item | `$select-blue-default`
+`--px-inbox-li-text-color--selected` | Text color for selected list item | `$white`
+`--px-inbox-icon-outline-color` | Outline color for all alert icons | `$white`
+`--px-inbox-alert-color` | Background color for level 1 alert icons | `$alert-red`
+`--px-inbox-warning-color` | Background color for level 2 alert icons | `$alert-orange`
+`--px-inbox-error-color` | Background color for level 3 alert icons | `$alert-yellow`
+`--px-inbox-information-color` | Background color for level 4 alert icons | `$alert-blue`
+
+@element px-inbox
+@blurb A list/detail or "Inbox" view for drilling down on items for more information.
+@homepage index.html
+@demo index.html
+-->
+
+<dom-module id="px-inbox-content">
+  <template>
+    <style include="px-inbox-styles"></style>
+    <div class="flex flex--col">
+      <div id="flights-pane" class="flex flex--justify">
+        <!--<template is="dom-repeat" items="{{selectedItems}}" as="selectedItem">
+        </template>-->
+      </div>
+      <div id="solution-window-header" class="flex flex--justify">
+        <div class="solution-item-row solution-item-checkbox flex__item--middle">
+          <input class="px-inbox-checkbox" type="checkbox" />
+        </div>
+        <div class="text solution-item-row solution-item-pnr flex__item--middle">
+          <span>PNR</span>
+        </div>
+        <div class="text solution-item-row solution-item-itinerary flex__item--middle">
+          <span>Itinerary</span>
+        </div>
+        <div class="text solution-item-row solution-item-commit flex__item--middle">
+          <span><button class="btn btn--tertiary">Commit All</button></span>
+        </div>
+        <div class="text solution-item-row solution-item-notify flex__item--middle">
+          <span><button class="btn btn--tertiary">Notify All</button></span>
+        </div>
+        <div class="text solution-item-row solution-item-color flex__item--middle">
+          <span class="fa-stack fa-md">
+            <i class="fa fa-circle-o fa-stack-2x" style="font-size: 1.7rem;"></i>
+            <i class="fa fa-filter fa-stack-1x" style="font-size: 0.8rem; bottom:7;"></i>
+          </span>
+        </div>
+      </div>
+      <div id="solution-window">
+        <ul class="list-ui list-ui--huge">
+          <template is="dom-repeat" items="{{listItems}}" as="listItem">
+            <li class="list-ui__item pointer">
+              <div class="flex flex--justify">
+                <div class="solution-item-row solution-item-checkbox flex__item--top">
+                  <input class="px-inbox-checkbox" type="checkbox" />
+                </div>
+                <div class="text solution-item-row solution-item-pnr flex__item--top">
+                  <span class="title" style="text-transform: uppercase">{{ listItem.confirmationNumber }}</span>
+                  <br/>
+                  <span class="subtitle">Lateness +{{ _computeLateness(listItem)}}</span>
+                  <br/>
+                  <span class="subtitle">PAX: {{ _getPaxCount(listItem) }} </span><span class="subtitle">SSR: {{ _hasSSR(listItem)}} </span><span class="subtitle">FF: {{ _getPrimaryFrequentFlyer(listItem) }}</span>
+                </div>
+                <div class="text solution-item-row solution-item-itinerary flex__item--top">
+                  <div class="current flex">
+                    <div class="u-1/6">
+                      <span class="subtitle">Current</span>
+                    </div>
+                    <div class="u-5/6">
+                      <template is="dom-repeat" items="{{ _getFlights(listItem)}}" as="flight">
+                        <span class="subtitle">{{ flight.operatingCarrier }} {{ flight.flightNumber }} {{ flight.origin }}-{{ flight.destination }} [{{ _formatDateTime(flight.departureTime, 'HH:mm') }}-{{ _formatDateTime(flight.arrivalTime, 'HH:mm') }}]</span>
+                        <br>
+                      </template>
+                    </div>
+                  </div>
+                  <br/>
+                  <div class="new flex">
+                    <div class="u-1/6">
+                      <span class="subtitle">New</span>
+                    </div>
+                    <div class="u-5/6">
+                      <template is="dom-if" if="{{_isReflowAvailable(listItem)}}">
+                        <template is="dom-repeat" items="{{ _getReflowFlights(listItem)}}" as="reflowFlight">
+                          <span class="title">{{ reflowFlight.operatingCarrier }} {{ reflowFlight.flightNumber }} {{ reflowFlight.origin }}-{{ reflowFlight.destination }} [{{ _formatDateTime(reflowFlight.departureTime, 'HH:mm')}}-{{ _formatDateTime(reflowFlight.arrivalTime, 'HH:mm')}}]</span>
+                          <br>
+                        </template>
+                      </template>
+                      <template is="dom-if" if="{{_isReflowNACP(listItem)}}">
+                        <span class="title">No available seat found.</span>
+                      </template>
+                      <template is="dom-if" if="{{_isReflowNARUL(listItem)}}">
+                        <span class="title">Rule Violation.</span>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+                <div class="text solution-item-row solution-item-commit flex__item--top">
+                  <span><button class="btn btn--tertiary">Commit</button></span>
+                  <br/>
+                  <span class="subtitle">{{ listItem.reflowStatus }}</span>
+                </div>
+                <div class="text solution-item-row solution-item-notify flex__item--top">
+                  <span><button class="btn btn--tertiary">Notify</button></span>
+                  <br/>
+                  <span class="subtitle">{{ listItem.notificationStatus }}</span>
+                </div>
+                <div class="text solution-item-row solution-item-color flex__item--top">
+                  <span>
+                    <i class$="fa fa-circle {{ _getRouteCategoryClass(listItem.routeCategory) }}"></i>
+                  </span>
+                </div>
+              </div>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+
+    is: 'px-inbox-content',
+
+    /**
+     * Event that is fired when the selected item is changed in the list component.
+     * You should listen for this event and then access selectedItem to get the ID of the item.
+     * @event selected-item-changed
+     */
+
+    properties: {
+      /**
+       * Array of items to include in the list. Each item in the array should be an object with:
+       * - id (used for fetching the details view)
+       * - title
+       * - subtitle
+       * - severity (one of "important", "error", "warning", or "information")
+       * - date (optional, should be valid <a href="https://www.w3.org/TR/NOTE-datetime">8601 date strings</a>)
+       * @property listItems
+       */
+      listItems: {
+        type: Array,
+        value: function() {
+          return [];
+        },
+        notify: true
+      },
+
+      selectedItems: {
+        type: Array,
+        value: function() {
+          return [];
+        },
+        notify: true
+      }
+    },
+
+    _hasSSR: function(listItem) {
+      return listItem.hasSSR();
+    },
+
+    _getPaxCount: function(listItem) {
+      return listItem.getPaxCount();
+    },
+
+    _getPrimaryFrequentFlyer: function(listItem) {
+      return listItem.getPrimaryFrequentFlyer();
+    },
+    _computeLateness: function(listItem) {
+      return listItem.getLateness();
+    },
+
+    _getRouteCategoryClass: function(routeCategory) {
+      return routeCategory.toLowerCase();
+    },
+
+    _getReflowFlights: function(listItem) {
+      return listItem.getReflowFlights();
+    },
+
+    _getFlights: function(listItem) {
+      return listItem.getFlights();
+    },
+
+    _formatDateTime: function(date, format) {
+      return moment(date).utc().format(format);
+    },
+
+    _isReflowAvailable: function(listItem) {
+      return listItem.reflowStatus == "Available";
+    },
+
+    _isReflowNACP: function(listItem) {
+      return listItem.reflowStatus == "N/A - CP";
+    },
+
+    _isReflowNARUL: function(listItem) {
+      return listItem.reflowStatus == "N/A - RUL";
+    }
+
+
+  });
+</script>

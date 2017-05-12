@@ -6,8 +6,11 @@
 <link rel="import" href="../polymer/polymer.html"/>
 <link rel="import" href="css/px-inbox-styles.html">
 <link rel="import" href="../px-dropdown/px-dropdown.html" />
+<link rel="import" href="../px-simple-bar-chart/px-simple-bar-chart.html" />
 <script src="../moment/moment.js"></script>
-
+<script src="../lodash/lodash.js"></script>
+<script src="../moment-duration-format/lib/moment-duration-format.js"></script>
+<link rel="import" href="px-inbox-content.html"/>
 <!--
 
 ##### Usage
@@ -42,61 +45,84 @@ Custom property | Description | Default
   <template>
     <style include="px-inbox-styles"></style>
     <div id="container" class="container flex">
-      <div id="list" class="list u-1/3">
-        <div class="search-field flex flex--left flex--middle">
-          <input class="text-input" value="{{_query::input}}"></input>
-          <iron-icon class="search-icon" icon="fa:fa-search"></iron-icon>
+      <div id="list" class="list u-1/6-desk u-1/4-lap">
+        <div class="flex flex--justify" style="height: 5vh; padding: .66667rem;">
+          <div class="flex flex--left">
+            <span class="subtitle" style="color: #8c8c8d; padding-right: 10px">Sort by:</span>
+            <template is="dom-if" if="{{!isReverse}}">
+              <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class="fa fa-arrow-circle-up" aria-hidden="true"></i></span>
+            </template>
+            <template is="dom-if" if="{{isReverse}}">
+              <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
+            </template>
+            <span class="subtitle" style="color:#129ec2">Departure Time</span>
+          </div>
+          <div class="flex flex--right">
+            <span class="fa-stack fa-md">
+              <i class="fa fa-circle-o fa-stack-2x" style="font-size: 1.7rem;"></i>
+              <i class="fa fa-filter fa-stack-1x" style="font-size: 0.8rem; bottom:7;"></i>
+            </span>
+          </div>
         </div>
-        <div class="flex flex--left flex--middle">
-          <span class="u-mh--">Sort by:</span>
-          <px-dropdown class="sort-dropdown" value="{{sortBy}}" display-value="{{sortBy}}">
-            <px-dropdown-content
-              class="sort-dropdown-content"
-              extend-dropdown=true
-              extend-dropdown-by=15
-              items='[
-                {"key":"one", "val": "Title"},
-                {"key":"two", "val": "Subtitle"},
-                {"key":"two", "val": "Severity"},
-                {"key":"two", "val": "Date"}]'>
-            </px-dropdown-content>
-          </px-dropdown>
+        <div class="flex flex--justify" style="height: 5vh; padding: .66667rem; border-bottom: 1px solid #b6c3cc;">
+          <div class="flex flex--left">
+            <div class="disrupted-flight-row flex__item flex__item--bottom">
+              <input class="px-inbox-checkbox" type="checkbox" checked="{{isSelectedAll::change}}" on-change="_selectAll" />
+            </div>
+            <div class="text disrupted-flight-row flex__item flex__item--bottom">
+              <template is="dom-if" if="{{isSolveEnabled}}">
+                <button class="btn btn--tertiary" on-click="_solve">Solve</button>
+              </template>
+              <template is="dom-if" if="{{!isSolveEnabled}}">
+                <button class="btn btn--disabled">Solve</button>
+              </template>
+            </div>
+          </div>
         </div>
-        <ul class="list-ui list-ui--small">
-          <template is="dom-repeat" items="{{listItems}}" as="listItem" filter="{{_computeFilter(_query)}}" sort="{{_computeSort(sortBy)}}">
-            <li id="{{listItem.id}}" class$="{{_computeClass(selectedItem,listItem.id)}}" on-change="_addItem">
-              <div class="flex flex--justify">
-                <div class="flex flex--left">
-                  <div>
-                    <input type="checkbox" on-click-"_addItem"/>
+        <div class="disruption-scrollable">
+          <ul class="list-ui list-ui--small">
+            <template is="dom-repeat" items="{{listItems}}" as="listItem">
+              <li class="list-ui__item pointer disruption-items">
+                <div class="flex flex--justify">
+                  <div class="u-1/6 flex__item flex__item--middle">
+                    <input id="{{listItem.flightID}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}" on-change="_addSelectedItem" />
                   </div>
-                  <div id="icon" class$="{{listItem.severity}} u-mr-">
-                    <div class="svg-canvas">
-                      <svg xmlns="http://www.w3.org/2000/svg" version="1.1" class="svg-triangle">
-                        <polygon points="0,27 15,0 30,27"/>
-                      </svg>
-                    </div>
-                    <span class="number"></span>
-                  </div>
-                  <div class="text">
-                    <span class="title">{{listItem.title}}</span>
+                  <div class="text u-2/6">
+                    <template is="dom-if" if="{{listItem.disruption.cancel}}">
+                      <span class="title cancelled" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
+                    </template>
+                    <template is="dom-if" if="{{listItem.disruption.delay}}">
+                      <span class$="title {{_getDelayedColor(listItem.disruption.delay.departureDelayMinutes)}}" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
+                    </template>
                     <br/>
-                    <span class="subtitle">{{listItem.subtitle}}</span>
+                    <span class="subtitle">{{listItem.flightDetails.bestAvailDeptTimeStr }}</span>
+                    <br/>
+                    <span class="subtitle">{{_formatImpacted(listItem.flightDetails.businessCompartmentPax, listItem.flightDetails.coachCompartmentPax)}}</span>
+                  </div>
+                  <div class="text u-3/6">
+                    <span class="subtitle">{{_formatStation(listItem.flightDetails.origin)}} - {{_formatStation(listItem.flightDetails.destination)}}</span>
+                    <br/>
+                    <template is="dom-if" if="{{listItem.disruption.cancel}}">
+                      <span class="subtitle">Cancelled</span>
+                    </template>
+                    <template is="dom-if" if="{{listItem.disruption.delay}}">
+                      <span class="subtitle">Delay </span><span class="title">{{_getDuration(listItem.disruption.delay.departureDelayMinutes)}}</span>
+                    </template>
+                    <br/>
+                    <span class="subtitle">Misconx </span><span class="title">{{_formatMisconnects(listItem.misconnectingPax.businessClassCount, listItem.misconnectingPax.coachClassCount)}}</span>
                   </div>
                 </div>
-                <div class="flex flex--right">
-                  <span class="info">{{listItem.formattedDate}}</span>
-                </div>
-              </div>
-            </li>
-          </template>
-        </ul>
+              </li>
+            </template>
+          </ul>
+        </div>
       </div>
-      <div id="detail" class="detail u-2/3">
-        <content></content>
+      <div id="detail" class="detail u-5/6-desk u-3/4-lap">
+        <template is="dom-if" if="{{hasSolutions}}">
+          <px-inbox-content list-items="{{solutionItems}}" selected-items="{{selectedDisruptedFlights}}"></px-inbox-content>
+        </template>
       </div>
     </div>
-
   </template>
 </dom-module>
 
@@ -121,105 +147,61 @@ Custom property | Description | Default
       * - date (optional, should be valid <a href="https://www.w3.org/TR/NOTE-datetime">8601 date strings</a>)
       * @property listItems
       */
+      /*listItemsMap: {
+        type: Object,
+        notify: true,
+        observer: '_arrangeListItems'
+      },*/
+
       listItems: {
         type: Array,
-        value: function() {
-          return [];
-        },
-        notify: true,
-        observer: '_formatDates'
+        notify: true
       },
-      /**
-      * ID of the selected item, for pulling up the details to display in the right side of the inbox view.
-      * @property selectedItem
-      */
-      selectedItem: {
-        type: String,
+
+      solutionItems: {
+        type: Array,
+        observer: '_changeHasSolutions',
         notify: true
       },
 
       selectedItems: {
         type: Array,
+        value: function() {
+          return [];
+        },
         notify: true
       },
-      /**
-      * Search query used to filter the list.
-      * @property _query
-      */
-      _query: {
-        type: String
+
+      isReverse: {
+        type: Boolean,
+        value: false,
+        notify: true
       },
-      /**
-      * Property to sort the list by.
-      * @property sortBy
-      */
-      sortBy: {
-        type: String,
-        value: "Date"
+
+      isSolveEnabled: {
+        type: Boolean,
+        value: false,
+        notify: true
       },
-      /**
-      * Height to render the inbox view component.
-      * @property height
-      * @default "100vh"
-      */
-      height: {
-        type: String,
-        value: "100vh",
-        observer: "_updateHeight"
-      }
-    },
 
-    observers: [
-      'changeDetected(selectedItems.*)'
-    ],
-    changeDetected: function(changeRecord) {
-       console.log("Change is coming!");
-     },
+      isSelectedAll: {
+        type: Boolean,
+        value: false,
+        notify: true
+      },
 
-    _addItem: function(evt) {
-      this.push('selectedItems', evt.currentTarget.id);
-      console.log("_addItem");
-    },
+      hasSolutions: {
+        type: Boolean,
+        value: false,
+        notify: true
+      },
 
-    /**
-    * Figures out whether the item is currently selected.
-    * @method _computeClass
-    */
-    _computeClass: function(selectedId, id) {
-      return JSON.stringify(selectedId) === JSON.stringify(id) ? 'list-ui__item pointer selected' : 'list-ui__item pointer';
-    },
-
-    /**
-    * Adds visual style to the currently selected item and triggers display of the details.
-    * @method _selectItem
-    */
-    _selectItem: function(evt) {
-      var otherItems = Polymer.dom(this.root).querySelectorAll('.selected');
-      for (var i=0; i<otherItems.length; i++) {
-        otherItems[i].classList.remove("selected");
-      };
-
-      evt.currentTarget.classList.add("selected");
-      this.selectedItem = evt.currentTarget.id;
-    },
-    /**
-    * Formats the date strings in each listItem to display correctly in the table using Moment.js.
-    * @method _formatDates
-    */
-    _formatDates: function() {
-      for (var i=0; i<this.listItems.length; i++) {
-        // If date is defined and recognized as a valid date string, convert to a friendlier display format.
-        if(this.listItems[i].date && moment(this.listItems[i].date).isValid()) {
-          this.listItems[i].formattedDate = moment(this.listItems[i].date).fromNow();
-        }
-        // If not recognized as a valid date string, just display whatever was passed in.
-        else {
-          this.listItems[i].formattedDate = this.listItems[i].date;
-        }
-      };
-      // By default, the first item in the array is selected on load.
-      if(this.listItems && this.listItems.length > 0) {
-        this.selectedItem = this.listItems[0].id;
+      selectedDisruptedFlights: {
+        type: Array,
+        value: function() {
+          return [];
+        },
+        notify: true
       }
     },
     /**
@@ -232,7 +214,8 @@ Custom property | Description | Default
 
       for (var i=0; i<otherItems.length; i++) {
         otherItems[i].classList.remove("selected");
-      };
+      }
+
       this.selectedItem = "";
 
       if (!query) {
@@ -249,45 +232,156 @@ Custom property | Description | Default
         };
       }
     },
-    /**
-    * Sort function for the array of list items.
-    * @method _computeSort
-    */
-    _computeSort: function(sortBy) {
-      sortBy = sortBy.toLowerCase();
-      // clear all selections
-      var otherItems = Polymer.dom(this.root).querySelectorAll('.selected')
-      for (var i=0; i<otherItems.length; i++) {
-        otherItems[i].classList.remove("selected");
-      };
-      this.selectedItem = "";
-      // return sort function which maps severities to numeric values
-      if(sortBy === "severity") {
-        return function(a, b) {
-          var severities = {
-            "important":4,
-            "warning":3,
-            "error":2,
-            "information":1
-          }
-          return severities[b.severity] - severities[a.severity];
+
+    _formatImpacted: function(businessCompartmentPax, coachCompartmentPax) {
+      var impactedString = '';
+
+      if (businessCompartmentPax != null) {
+          impactedString += "J" + businessCompartmentPax;
+      }
+
+      if (coachCompartmentPax != null) {
+        impactedString += "Y" + coachCompartmentPax;
+      }
+
+      return impactedString;
+    },
+
+    _formatMisconnects: function(businessClassCount, coachClassCount) {
+      var misconnects = '';
+
+      if (businessClassCount != null) {
+        misconnects += "J" + businessClassCount;
+      }
+
+      if (coachClassCount != null) {
+        misconnects += "Y" + coachClassCount;
+      }
+
+      return misconnects;
+    },
+
+    _getDuration: function(minutes) {
+      return moment.duration(minutes, "minutes").format("hh:mm", { trim: false });
+    },
+
+    _formatStation: function(station) {
+      return station.substr(3, 7);
+    },
+
+    _isValidDate: function(date) {
+      var minDate = moment.utc("0001-01-01");
+      return moment.utc(date).isAfter(minDate);
+    },
+
+    _getDelayedColor: function(departureDelayMinutes) {
+        if (departureDelayMinutes > 15 && departureDelayMinutes < 180) {
+          return "delayed-15";
+        } else if (departureDelayMinutes >= 180) {
+          return "delayed-3"
+        }
+    },
+    _sort: function() {
+      if (this.listItems != null && this.listItems.length > 0) {
+        this._toggleSort();
+        this.listItems = this.listItems.reverse()
+        this.listItems = this.listItems.slice();
+//        this.set("listItems", this.listItems);
+      }
+    },
+
+    _getOrder: function() {
+      return this.isReverse;
+    },
+
+    _toggleSort: function() {
+      this.isReverse = !this.isReverse;
+    },
+
+    _addSelectedItem: function (evt) {
+      var index = this.selectedItems.indexOf(evt.currentTarget.id);
+      if (evt.currentTarget.checked) {
+        this.push("selectedItems", evt.currentTarget.id);
+      } else {
+
+        this.splice('selectedItems', index, 1);
+      }
+
+      this._enableSolve();
+
+      if (this.selectedItems.length == this.listItems.length) {
+        this.isSelectedAll = true;
+      } else {
+        this.isSelectedAll = false;
+      }
+  },
+
+  _enableSolve: function() {
+    if (this.selectedItems != null && this.selectedItems.length > 0) {
+      this.isSolveEnabled = true;
+    } else {
+      this.isSolveEnabled = false;
+    }
+  },
+
+  _selectAll: function(evt) {
+    this.isSelectedAll = !this.isSelectedAll;
+    if (this.listItems != null && this.listItems.length > 0) {
+      for (var i = 0; i < this.listItems.length; i++) {
+        this.listItems[i].checked = this.isSelectedAll;
+        this._updateItem(this.listItems[i]);
+        var flightId = this.listItems[i].flightID;
+        if (this.isSelectedAll && (this.selectedItems.indexOf(flightId) == -1)) {
+          this.push("selectedItems", flightId);
         }
       }
-      // return sort function which correctly compares dates
-      else if (sortBy === "date") {
-        return function(a,b) {
-          return (a.date > b.date) ? -1 : (a.date < b.date) ? 1 : 0;
-        }
+
+      if (!this.isSelectedAll) {
+        this.selectedItems = [];
       }
-      // return sort function which compares the items mathematically
-      else {
-        return function(a, b) {
-          return (a[sortBy] < b[sortBy]) ? -1 : (a[sortBy] > b[sortBy]) ? 1 : 0;
+
+      this._enableSolve();
+    }
+  },
+
+    _updateItem: function(listItem) {
+      var p = 'listItems.' + this.listItems.indexOf(listItem) + '.';
+      for (var i in listItem) {
+        if (listItem.hasOwnProperty(i)) {
+          this.notifyPath(p + i, listItem[i]);
         }
       }
     },
-    _updateHeight: function() {
-      this.$.container.style.height = this.height;
+
+    _solve: function() {
+      this.fire('solve');
+      for (var i = 0; i < this.selectedItems.length > 0; i++) {
+        for (var j = 0; j < this.listItems.length; j++) {
+          if (this.selectedItems[i] == this.listItems[j].flightID) {
+            var disruptedFlight = this.listItems[j];
+            disruptedFlight.status = "solved";
+            this._updateItem(disruptedFlight);
+            this.push("selectedDisruptedFlights", disruptedFlight);
+          }
+        }
+      }
+    },
+
+    _arrangeListItems: function() {
+      var tempListItems = [];
+      var keys = Object.keys(this.listItemsMap);
+      for (var i = 0; i < keys.length; i++) {
+        tempListItems.push(this.listItemsMap[keys[i]]);
+      }
+      this.set("listItems", tempListItems);
+    },
+
+    _changeHasSolutions: function() {
+      if (this.solutionItems != null && this.solutionItems.length > 0) {
+        this.hasSolutions = true;
+      } else {
+        this.hasSolutions = false;
+      }
     }
-  });
+});
 </script>
