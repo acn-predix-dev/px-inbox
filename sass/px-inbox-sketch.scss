@@ -75,9 +75,8 @@ $inuit-enable-btn--bare--primary : true;
 
 // Component
 .container {
-  overflow: hidden;   // change 5-10-2017
-  margin-top: 5vh;    // change 5-10-2017
-  height: 95vh;       // change 5-10-2017
+  overflow: hidden;
+  margin-top: 50px;
 }
 
 .list {
@@ -102,7 +101,6 @@ px-dropdown {
 }
 
 .detail {
-  height: 100%;
   overflow-y: overlay;
 }
 
@@ -187,9 +185,7 @@ $inuit-enable-margins--small: true;
   background-color: white;
 }
 
-.disruption-items {
-  height: 8vh;
-}
+// .disruption-items {}
 
 .legend-text {
   font-size: x-small;
@@ -214,19 +210,21 @@ $inuit-enable-margins--small: true;
 }
 
 /*START-CHANGES*/
+//display: inline-block;
 #flights-pane {
   background-color: #EFF3F6;
-  height: 10vh;
-  padding: .66667rem
+  height: 100px;
+  padding: .66667rem;  
 }
 
 #solution-window {
-  height: 77vh;
+  height: calc(100vh - 200px);
   overflow-y: overlay;
 }
 
 #list {
   flex: 0 1 auto;
+  height: calc(100vh - 50px);
 }
 
 #detail {
@@ -275,11 +273,78 @@ $inuit-enable-margins--small: true;
 
 .disruption-scrollable {
   overflow-y: overlay;
-  height: 85vh;
+  height: calc(100vh - 150px);
 }
 
 #solution-window-header {
   padding: 1rem;
-  height:8vh;
+  height:50px;
   border-bottom: 1px solid #b6c3cc;
 }
+
+:host ::content #dropcell {
+  background-color: transparent;
+  border: none;
+  width: 80px;
+}
+
+:host ::content #dropcell:hover {
+  background-color: transparent;
+  border: none;
+}
+
+// px-dropdown {
+//   --px-dropdown-border-color: transparent;
+// }
+
+.disruption-header {
+  height: 50px;
+  padding: .66667rem;
+}
+
+.border-bottom {
+  border-bottom: 1px solid #b6c3cc
+}
+
+// PIE/DONUT CHART
+:host ::content #popoverWrapper {
+    height: 0px;
+}
+
+:host ::content #popover.px-popover {
+    height: 0px;
+}
+
+:host ::content #register {
+    position: relative;
+    display: flex;
+    align-self: center;
+    right: -200px;
+    order: 1;
+}
+
+:host ::content .px-vis-pie-chart {
+    display: flex;
+    align-self: center;
+}
+
+:host ::content g.title-group > text:first-child {
+    font-size: 14px;
+}
+
+:host ::content g.title-group > text:nth-child(2) {
+    visibility: hidden;
+}
+
+:host ::content div.seriesData {
+    visibility: hidden;
+}
+
+:host ::content .wrapper.px-vis-pie-chart {
+    padding-right: 40px;
+}
+
+:host ::content #div-donut {
+    width: 300px;
+}
+
