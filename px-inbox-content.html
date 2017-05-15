@@ -10,6 +10,8 @@
 <script src="../lodash/lodash.js"></script>
 <script src="../moment-duration-format/lib/moment-duration-format.js"></script>
 <link rel="import" href="../px-table-view/px-table-view.html" />
+<link rel="import" href="../px-vis-pie-chart/px-vis-pie-chart.html"/>
+
 <!--
 
 ##### Usage
@@ -45,8 +47,34 @@ Custom property | Description | Default
     <style include="px-inbox-styles"></style>
     <div class="flex flex--col">
       <div id="flights-pane" class="flex flex--justify">
-        <!--<template is="dom-repeat" items="{{selectedItems}}" as="selectedItem">
-        </template>-->
+          <div class="flex flex--left">
+            <template is="dom-repeat" items="{{selectedItems}}" as="selectedItem">
+              <span>{{selectedItem.flightID}}</span></div>
+            </template>
+          </div>
+          <div id="div-donut" class="flex flex--right">
+            <px-vis-pie-chart 
+              prevent-resize="true" 
+              width="100" 
+              height="100" 
+              inner-radius=".7"
+              chart-horizontal-alignment="right" 
+              chart-vertical-alignment="center" 
+              margin='{"top":"10","bottom":"10","left":"0","right":"0"}' 
+              register-config='{"type":"vertical","width":0}' 
+              chart-data='[
+                  {"x":1,"y":"Terminating","colorIndex":0,"backgroundColor":"rgb(93,165,218)"},
+                  {"x":1,"y":"Connecting","colorIndex":5,"backgroundColor":"rgb(178,118,178)"},
+                  {"x":1,"y":"Misconnecting","colorIndex":2,"backgroundColor":"rgb(96,189,104)"}
+                ]' 
+              series-config='{"mySerie":{"y":"y","x":"x"}}' 
+              donut="true" 
+              show-title="true"
+              title="J8 Y80" 
+              title-spacing="5" 
+              use-percentage="false">
+            </px-vis-pie-chart>
+          </div>
       </div>
       <div id="solution-window-header" class="flex flex--justify">
         <div class="solution-item-row solution-item-checkbox flex__item--middle">
@@ -314,6 +342,7 @@ Custom property | Description | Default
     _isReflowNARUL: function(listItem) {
       return listItem.reflowStatus == "N/A - RUL";
     },
+<<<<<<< HEAD
 
     _isReflowAvailableOAT: function(listItem) {
       console.log("Available-OAT " + listItem.reflowStatus);
@@ -349,6 +378,10 @@ Custom property | Description | Default
 
     _isReflowInterrupted: function(listItem) {
       return listItem.reflowStatus == "Interrupted";
+    },
+
+    ready: function() {
+      console.log(this.selectedItems);
     }
 
   });

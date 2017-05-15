@@ -46,7 +46,7 @@ Custom property | Description | Default
     <style include="px-inbox-styles"></style>
     <div id="container" class="container flex">
       <div id="list" class="list u-1/6-desk u-1/4-lap">
-        <div class="flex flex--justify" style="height: 5vh; padding: .66667rem;">
+        <div class="flex flex--justify disruption-header">
           <div class="flex flex--left">
             <span class="subtitle" style="color: #8c8c8d; padding-right: 10px">Sort by:</span>
             <template is="dom-if" if="{{!isReverse}}">
@@ -64,7 +64,7 @@ Custom property | Description | Default
             </span>
           </div>
         </div>
-        <div class="flex flex--justify" style="height: 5vh; padding: .66667rem; border-bottom: 1px solid #b6c3cc;">
+        <div class="flex flex--justify disruption-header border-bottom">
           <div class="flex flex--left">
             <div class="disrupted-flight-row flex__item flex__item--bottom">
               <input class="px-inbox-checkbox" type="checkbox" checked="{{isSelectedAll::change}}" on-change="_selectAll" />
