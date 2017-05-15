@@ -119,7 +119,7 @@ Custom property | Description | Default
       </div>
       <div id="detail" class="detail u-5/6-desk u-3/4-lap">
         <template is="dom-if" if="{{hasSolutions}}">
-          <px-inbox-content list-items="{{solutionItems}}" selected-items="{{selectedDisruptedFlights}}"></px-inbox-content>
+          <px-inbox-content list-items="{{solutionItems}}" display-items="{{selectedDisruptedFlights}}"></px-inbox-content>
         </template>
       </div>
     </div>
@@ -215,7 +215,7 @@ Custom property | Description | Default
       for (var i=0; i<otherItems.length; i++) {
         otherItems[i].classList.remove("selected");
       }
-
+      ;
       this.selectedItem = "";
 
       if (!query) {
@@ -286,7 +286,6 @@ Custom property | Description | Default
         this._toggleSort();
         this.listItems = this.listItems.reverse()
         this.listItems = this.listItems.slice();
-//        this.set("listItems", this.listItems);
       }
     },
 
@@ -344,44 +343,44 @@ Custom property | Description | Default
     }
   },
 
-    _updateItem: function(listItem) {
-      var p = 'listItems.' + this.listItems.indexOf(listItem) + '.';
-      for (var i in listItem) {
-        if (listItem.hasOwnProperty(i)) {
-          this.notifyPath(p + i, listItem[i]);
-        }
-      }
-    },
-
-    _solve: function() {
-      this.fire('solve');
-      for (var i = 0; i < this.selectedItems.length > 0; i++) {
-        for (var j = 0; j < this.listItems.length; j++) {
-          if (this.selectedItems[i] == this.listItems[j].flightID) {
-            var disruptedFlight = this.listItems[j];
-            disruptedFlight.status = "solved";
-            this._updateItem(disruptedFlight);
-            this.push("selectedDisruptedFlights", disruptedFlight);
-          }
-        }
-      }
-    },
-
-    _arrangeListItems: function() {
-      var tempListItems = [];
-      var keys = Object.keys(this.listItemsMap);
-      for (var i = 0; i < keys.length; i++) {
-        tempListItems.push(this.listItemsMap[keys[i]]);
-      }
-      this.set("listItems", tempListItems);
-    },
-
-    _changeHasSolutions: function() {
-      if (this.solutionItems != null && this.solutionItems.length > 0) {
-        this.hasSolutions = true;
-      } else {
-        this.hasSolutions = false;
+  _updateItem: function(listItem) {
+    var p = 'listItems.' + this.listItems.indexOf(listItem) + '.';
+    for (var i in listItem) {
+      if (listItem.hasOwnProperty(i)) {
+        this.notifyPath(p + i, listItem[i]);
       }
     }
+  },
+
+  _solve: function() {
+    for (var i = 0; i < this.selectedItems.length > 0; i++) {
+      for (var j = 0; j < this.listItems.length; j++) {
+        if (this.selectedItems[i] == this.listItems[j].flightID) {
+          var disruptedFlight = this.listItems[j];
+          disruptedFlight.status = "solved";
+          this._updateItem(disruptedFlight);
+          this.push("selectedDisruptedFlights", disruptedFlight);
+        }
+      }
+    }
+    this.fire('solve', { selectedDisruptedFlightIds: this.selectedItems });
+  },
+
+  _arrangeListItems: function() {
+    var tempListItems = [];
+    var keys = Object.keys(this.listItemsMap);
+    for (var i = 0; i < keys.length; i++) {
+      tempListItems.push(this.listItemsMap[keys[i]]);
+    }
+    this.set("listItems", tempListItems);
+  },
+
+  _changeHasSolutions: function() {
+    if (this.solutionItems != null && this.solutionItems.length > 0) {
+      this.hasSolutions = true;
+    } else {
+      this.hasSolutions = false;
+    }
+  }
 });
 </script>
