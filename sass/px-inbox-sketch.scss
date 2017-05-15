@@ -283,3 +283,18 @@ $inuit-enable-margins--small: true;
   height:8vh;
   border-bottom: 1px solid #b6c3cc;
 }
+
+:host ::content #dropcell {
+  background-color: transparent;
+  border: none;
+  width: 80px;
+}
+
+:host ::content #dropcell:hover {
+  background-color: transparent;
+  border: none;
+}
+
+// px-dropdown {
+//   --px-dropdown-border-color: transparent;
+// }

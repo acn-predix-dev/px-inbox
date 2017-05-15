@@ -121,11 +121,56 @@ Custom property | Description | Default
                 </div>
                 <div class="text solution-item-row solution-item-commit flex__item--top">
                   <span><button class="btn btn--tertiary">Commit</button></span>
-                  <br/>
-                  <span class="subtitle">{{ listItem.reflowStatus }}</span>
+                  <br/>                  
+                  <template is="dom-if" if="{{_isReflowAvailableOAT(listItem)}}">                
+                    <px-dropdown display-value= "{{listItem.reflowStatus}}" value="{{selectedValue}}">
+                      <px-dropdown-content extend-dropdown='true' extend-dropdown-by='25'
+                      max-cont-character-width='10' items='[ {"key":"1","val":"Rebooked-OAT"},{"key":"2","val":"Rebooked-Other"}]'>
+                      </px-dropdown-content>
+                      </px-dropdown>
+                  </template>
+
+                  <template is="dom-if" if="{{!_isReflowAvailableOAT(listItem)}}">
+                    <span class="subtitle">{{ listItem.reflowStatus }}</span>
+                  </template>
+                    
                 </div>
                 <div class="text solution-item-row solution-item-notify flex__item--top">
-                  <span><button class="btn btn--tertiary">Notify</button></span>
+                
+                  <template is="dom-if" if="{{_isReflowNACP(listItem)}}">
+                    <span><button class="btn btn--tertiary">Notify</button></span>
+                  </template>
+                   <template is="dom-if" if="{{_isReflowNARUL(listItem)}}">
+                    <span><button class="btn btn--tertiary">Notify</button></span>
+                  </template>
+                  <template is="dom-if" if="{{_isReflowRebooked(listItem)}}">
+                    <span><button class="btn btn--tertiary">Notify</button></span>
+                  </template>
+                  <template is="dom-if" if="{{_isReflowRebookedOAT(listItem)}}">
+                    <span><button class="btn btn--tertiary">Notify</button></span>
+                  </template>
+                  <template is="dom-if" if="{{_isReflowAvailableOAT(listItem)}}">
+                    <span><button class$="btn {{_check(disable)}}">Notify</button></span>
+                  </template>
+                  <template is="dom-if" if="{{_isReflowAvailable(listItem)}}">
+                     <span><button class="btn btn--disabled">Notify</button></span>
+                  </template>
+                  <template is="dom-if" if="{{_isReflowRebookedOther(listItem)}}">
+                     <span><button class="btn btn--disabled">Notify</button></span>
+                  </template>
+                  <template is="dom-if" if="{{_isReflowFailedCP(listItem)}}">
+                     <span><button class="btn btn--disabled">Notify</button></span>
+                  </template>
+                  <template is="dom-if" if="{{_isReflowFailedNetCXN(listItem)}}">
+                     <span><button class="btn btn--disabled">Notify</button></span>
+                  </template>
+                  <template is="dom-if" if="{{_isReflowNotRebooked(listItem)}}">
+                     <span><button class="btn btn--disabled">Notify</button></span>
+                  </template>
+                  <template is="dom-if" if="{{_isReflowInterrupted(listItem)}}">
+                     <span><button class="btn btn--disabled">Notify</button></span>
+                  </template>
+          
                   <br/>
                   <span class="subtitle">{{ listItem.notificationStatus }}</span>
                 </div>
@@ -172,12 +217,47 @@ Custom property | Description | Default
         notify: true
       },
 
+      selectedValue:{
+        type: String,
+        notify: true
+      },
+
       selectedItems: {
         type: Array,
         value: function() {
           return [];
         },
         notify: true
+      },
+
+      disable: {
+        type: Boolean,
+        value: true,
+        notify: true
+      }
+    },
+
+    listeners: {
+      'px-dropdown-value-changed': 'dpChanged'
+    },
+
+    dpChanged: function () {
+      console.log("Value Changed " + this.selectedValue);
+
+      if (this.selectedValue === "Rebooked-OAT") {
+        console.log("Value Changed again to enable  " + this.selectedValue);
+        this.disable = false;
+      } else if (this.selectedValue === "Rebooked-Other") {
+          console.log("Value Changed again to disable  " + this.selectedValue);
+        this.disable = true; 
+      }
+    },
+
+    _check: function(disable) {
+      if(disable) {
+        return "btn--disabled";
+      } else {
+        return "btn--tertiary";
       }
     },
 
@@ -208,6 +288,14 @@ Custom property | Description | Default
       return listItem.getFlights();
     },
 
+     _getBtnClass: function(isEnabled) {
+      if (isEnabled) {
+        return "btn--tertiary";
+      } else {
+        return "btn--disabled";
+      }
+    },
+
     _formatDateTime: function(date, format) {
       return moment(date).utc().format(format);
     },
@@ -217,13 +305,51 @@ Custom property | Description | Default
     },
 
     _isReflowNACP: function(listItem) {
-      return listItem.reflowStatus == "N/A - CP";
+      console.log("N/A – CP" + listItem.reflowStatus);
+      console.log("N/A – CP" + listItem.reflowStatus == "N/A – CP");
+      console.log("N/A – CP" + listItem.reflowStatus === "N/A – CP");
+      return listItem.reflowStatus == "N/A – CP";
     },
 
     _isReflowNARUL: function(listItem) {
       return listItem.reflowStatus == "N/A - RUL";
-    }
+    },
 
+    _isReflowAvailableOAT: function(listItem) {
+      console.log("Available-OAT " + listItem.reflowStatus);
+      return listItem.reflowStatus == "Available – OAT";
+    },
+
+    _isReflowRebooked: function(listItem) {
+      return listItem.reflowStatus == "Rebooked";
+    },
+
+    _isReflowRebookedOAT: function(listItem) {
+      console.log("Rebooked - OAT" + listItem.reflowStatus);
+      console.log("Rebooked - OAT" + listItem.reflowStatus == "Rebooked - OAT");
+      console.log("Rebooked - OAT" + listItem.reflowStatus === "Rebooked - OAT");
+      return listItem.reflowStatus == "Rebooked - OAT";
+    },
+
+     _isReflowRebookedOther: function(listItem) {
+      return listItem.reflowStatus == "Rebooked - Other";
+    },
+
+     _isReflowFailedCP: function(listItem) {
+      return listItem.reflowStatus == "Failed - CP";
+    },
+
+     _isReflowFailedNetCXN: function(listItem) {
+      return listItem.reflowStatus == "Failed - NET/CXN";
+    },
+
+     _isReflowNotRebooked: function(listItem) {
+      return listItem.reflowStatus == "Not Rebooked";
+    },
+
+    _isReflowInterrupted: function(listItem) {
+      return listItem.reflowStatus == "Interrupted";
+    }
 
   });
 </script>
