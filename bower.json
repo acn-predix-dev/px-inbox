@@ -36,7 +36,6 @@
     "px-actionable-text-icons-design": "^1.1.8",
     "px-buttons-design": "^1.1.8",
     "px-vis-pie-chart": "^1.1.0",
-    "px-layout": "^0.2.3",
     "px-layout-design": "^0.4.6"
   },
   "devDependencies": {
