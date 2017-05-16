@@ -4,13 +4,13 @@
     'gulp serve' (or similar server setup) to enable correct finding of bower dependencies for local runs.
 -->
 <link rel="import" href="../polymer/polymer.html"/>
-<link rel="import" href="css/px-inbox-styles.html">
 <link rel="import" href="../px-dropdown/px-dropdown.html" />
-<link rel="import" href="../px-simple-bar-chart/px-simple-bar-chart.html" />
-<script src="../moment/moment.js"></script>
-<script src="../lodash/lodash.js"></script>
-<script src="../moment-duration-format/lib/moment-duration-format.js"></script>
 <link rel="import" href="px-inbox-content.html"/>
+<link rel="import" href="css/px-inbox-styles.html">
+
+<script src="../moment/moment.js"></script>
+<script src="../moment-duration-format/lib/moment-duration-format.js"></script>
+
 <!--
 
 ##### Usage
@@ -49,12 +49,7 @@ Custom property | Description | Default
         <div class="flex flex--justify disruption-header">
           <div class="flex flex--left">
             <span class="subtitle" style="color: #8c8c8d; padding-right: 10px">Sort by:</span>
-            <template is="dom-if" if="{{!isReverse}}">
-              <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class="fa fa-arrow-circle-up" aria-hidden="true"></i></span>
-            </template>
-            <template is="dom-if" if="{{isReverse}}">
-              <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
-            </template>
+              <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class$="fa {{_getSortOrder(isReverse)}}" aria-hidden="true"></i></span>
             <span class="subtitle" style="color:#129ec2">Departure Time</span>
           </div>
           <div class="flex flex--right">
@@ -118,8 +113,8 @@ Custom property | Description | Default
         </div>
       </div>
       <div id="detail" class="detail u-5/6-desk u-3/4-lap">
-        <template is="dom-if" if="{{hasSolutions}}">
-          <px-inbox-content list-items="{{solutionItems}}" display-items="{{selectedDisruptedFlights}}"></px-inbox-content>
+        <template is="dom-if" if="{{_hasSolutions(contentItems)}}">
+          <px-inbox-content list-items="{{contentItems}}" display-items="{{selectedDisruptedFlights}}"></px-inbox-content>
         </template>
       </div>
     </div>
@@ -158,9 +153,8 @@ Custom property | Description | Default
         notify: true
       },
 
-      solutionItems: {
+      contentItems: {
         type: Array,
-        observer: '_changeHasSolutions',
         notify: true
       },
 
@@ -190,46 +184,12 @@ Custom property | Description | Default
         notify: true
       },
 
-      hasSolutions: {
-        type: Boolean,
-        value: false,
-        notify: true
-      },
-
       selectedDisruptedFlights: {
         type: Array,
         value: function() {
           return [];
         },
         notify: true
-      }
-    },
-    /**
-    * Searches through the list titles and subtitles and filters based on the query.
-    * @method _computeFilter
-    */
-    _computeFilter: function(query) {
-      // clear all selections
-      var otherItems = Polymer.dom(this.root).querySelectorAll('.selected');
-
-      for (var i=0; i<otherItems.length; i++) {
-        otherItems[i].classList.remove("selected");
-      }
-      ;
-      this.selectedItem = "";
-
-      if (!query) {
-        // set filter to null to disable filtering
-        return null;
-      } else {
-        // return a filter function for the current search query
-        query = query.toLowerCase();
-        return function(listItem) {
-          var title = listItem.title.toLowerCase();
-          var subtitle = listItem.subtitle.toLowerCase();
-          return (title.indexOf(query) != -1 ||
-              subtitle.indexOf(query) != -1);
-        };
       }
     },
 
@@ -269,11 +229,6 @@ Custom property | Description | Default
       return station.substr(3, 7);
     },
 
-    _isValidDate: function(date) {
-      var minDate = moment.utc("0001-01-01");
-      return moment.utc(date).isAfter(minDate);
-    },
-
     _getDelayedColor: function(departureDelayMinutes) {
         if (departureDelayMinutes > 15 && departureDelayMinutes < 180) {
           return "delayed-15";
@@ -281,9 +236,10 @@ Custom property | Description | Default
           return "delayed-3"
         }
     },
+    
     _sort: function() {
       if (this.listItems != null && this.listItems.length > 0) {
-        this._toggleSort();
+        this.isReverse = !this.isReverse;
         this.listItems = this.listItems.reverse()
         this.listItems = this.listItems.slice();
       }
@@ -293,16 +249,11 @@ Custom property | Description | Default
       return this.isReverse;
     },
 
-    _toggleSort: function() {
-      this.isReverse = !this.isReverse;
-    },
-
     _addSelectedItem: function (evt) {
       var index = this.selectedItems.indexOf(evt.currentTarget.id);
       if (evt.currentTarget.checked) {
         this.push("selectedItems", evt.currentTarget.id);
       } else {
-
         this.splice('selectedItems', index, 1);
       }
 
@@ -325,26 +276,25 @@ Custom property | Description | Default
 
   _selectAll: function(evt) {
     this.isSelectedAll = !this.isSelectedAll;
-    if (this.listItems != null && this.listItems.length > 0) {
-      for (var i = 0; i < this.listItems.length; i++) {
-        this.listItems[i].checked = this.isSelectedAll;
-        this._updateItem(this.listItems[i]);
-        var flightId = this.listItems[i].flightID;
-        if (this.isSelectedAll && (this.selectedItems.indexOf(flightId) == -1)) {
-          this.push("selectedItems", flightId);
+    if (this.isSelectedAll) {
+      if (this.listItems != null && this.listItems.length > 0) {
+        for (var i = 0; i < this.listItems.length; i++) {
+          this.listItems[i].checked = this.isSelectedAll;
+          this._updateItem(this.listItems[i], i);
+          var flightId = this.listItems[i].flightID;
+          if (this.isSelectedAll && (this.selectedItems.indexOf(flightId) == -1)) {
+            this.push("selectedItems", flightId);
+          }
         }
+        this._enableSolve();
       }
-
-      if (!this.isSelectedAll) {
-        this.selectedItems = [];
-      }
-
-      this._enableSolve();
+    } else {
+      this.selectedItems = [];
     }
   },
 
-  _updateItem: function(listItem) {
-    var p = 'listItems.' + this.listItems.indexOf(listItem) + '.';
+  _updateItem: function(listItem, index) {
+    var p = 'listItems.' + index + '.';
     for (var i in listItem) {
       if (listItem.hasOwnProperty(i)) {
         this.notifyPath(p + i, listItem[i]);
@@ -359,27 +309,25 @@ Custom property | Description | Default
           var disruptedFlight = this.listItems[j];
           disruptedFlight.status = "solved";
           this._updateItem(disruptedFlight);
-          // this.push("selectedDisruptedFlights", disruptedFlight);
         }
       }
     }
     this.fire('solve', { selectedDisruptedFlightIds: this.selectedItems });
   },
 
-  _arrangeListItems: function() {
-    var tempListItems = [];
-    var keys = Object.keys(this.listItemsMap);
-    for (var i = 0; i < keys.length; i++) {
-      tempListItems.push(this.listItemsMap[keys[i]]);
-    }
-    this.set("listItems", tempListItems);
-  },
-
-  _changeHasSolutions: function() {
-    if (this.solutionItems != null && this.solutionItems.length > 0) {
-      this.hasSolutions = true;
+  _hasSolutions: function(contentItems) {
+    if (contentItems != null && contentItems.length > 0) {
+      return true;
     } else {
-      this.hasSolutions = false;
+      return false;
+    }
+  },
+  
+  _getSortOrder: function(isReverse) {
+    if (isReverse) {
+      return 'fa-arrow-circle-down';
+    } else {
+      return 'fa-arrow-circle-up';
     }
   }
 });

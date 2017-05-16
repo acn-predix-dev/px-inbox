@@ -110,7 +110,7 @@ Custom property | Description | Default
                       <span class="subtitle">Current</span>
                     </div>
                     <div class="u-5/6">
-                      <template is="dom-repeat" items="{{ _getFlights(listItem)}}" as="flight">
+                      <template is="dom-repeat" items="{{_getFlights(listItem)}}" as="flight">
                         <span class="subtitle">{{ flight.operatingCarrier }} {{ flight.flightNumber }} {{ flight.origin }}-{{ flight.destination }} [{{ _formatDateTime(flight.departureTime, 'HH:mm') }}-{{ _formatDateTime(flight.arrivalTime, 'HH:mm') }}]</span>
                         <br>
                       </template>
@@ -122,7 +122,7 @@ Custom property | Description | Default
                       <span class="subtitle">New</span>
                     </div>
                     <div class="u-5/6">
-                      <template is="dom-if" if="{{_isReflowAvailable(listItem.reflowStatus)}}">
+                      <template is="dom-if" if="{{_isReflowFlightsVisiable(listItem.reflowStatus)}}">
                         <template is="dom-repeat" items="{{ _getReflowFlights(listItem)}}" as="reflowFlight">
                           <span class="title">{{ reflowFlight.operatingCarrier }} {{ reflowFlight.flightNumber }} {{ reflowFlight.origin }}-{{ reflowFlight.destination }} [{{ _formatDateTime(reflowFlight.departureTime, 'HH:mm')}}-{{ _formatDateTime(reflowFlight.arrivalTime, 'HH:mm')}}]</span>
                           <br>
@@ -141,8 +141,8 @@ Custom property | Description | Default
                   <span><button class="btn btn--tertiary">Commit</button></span>
                   <br/>
                   <template is="dom-if" if="{{_isReflowAvailableOAT(listItem)}}">
-                    <px-dropdown display-value="{{listItem.reflowStatus}}" value="{{selectedValue}}">
-                      <px-dropdown-content extend-dropdown='true' extend-dropdown-by='25' max-cont-character-width='10' items='[ {"key":"1","val":"Rebooked-OAT"},{"key":"2","val":"Rebooked-Other"}]'>
+                    <px-dropdown display-value="{{listItem.reflowStatus}}" value="{{listItem.rebookOption}}">
+                      <px-dropdown-content extend-dropdown='true' extend-dropdown-by='25' max-cont-character-width='10' items='[ {"key":"1","val":"Rebooked - OAT"},{"key":"2","val":"Rebooked - Other"}]'>
                       </px-dropdown-content>
                     </px-dropdown>
                   </template>
@@ -154,16 +154,13 @@ Custom property | Description | Default
                 </div>
                 <div class="text solution-item-row solution-item-notify flex__item--top">
                   <!--<span><button id="{{listItem.confirmationNumber}}" class$="btn {{_isNotified(listItem.notificationStatus)}}" on-click="_notifySingle">Notify</button></span>-->
-                  <!--<span><button id="{{listItem.confirmationNumber}}" class$="btn {{_getNotifyBtnClass(listItem.reflowStatus, listItem.notificationStatus)}}" on-click="_notifySingle">Notify</button></span>-->
-                  <span><button id="{{listItem.confirmationNumber}}" class$="btn {{_getNotifyBtnClass(listItem.notificationStatus, listItem.reflowStatus)}}" on-click="_notifySingle">Notify</button></span>
-                  <!--<button class='btn btn--primary modal-trigger'>Open Modal</button>-->
-
+                  <span><button id="{{listItem.confirmationNumber}}" class$="btn {{_getNotifyBtnClass(listItem.rebookOption, listItem.notificationStatus, listItem.reflowStatus)}}" on-click="_notifySingle">Notify</button></span>
                   <br/>
                   <span class="subtitle">{{ listItem.notificationStatus }}</span>
                 </div>
                 <div class="text solution-item-row solution-item-color flex__item--top">
                   <span>
-                    <i class$="fa fa-circle {{ _getRouteCategoryClass(listItem.routeCategory) }}"></i>
+                    <i class$="fa fa-circle {{_getRouteCategoryClass(listItem.routeCategory)}}"></i>
                   </span>
                 </div>
               </div>
@@ -180,15 +177,7 @@ Custom property | Description | Default
 
 <script>
   Polymer({
-
     is: 'px-inbox-content',
-
-    /**
-     * Event that is fired when the selected item is changed in the list component.
-     * You should listen for this event and then access selectedItem to get the ID of the item.
-     * @event selected-item-changed
-     */
-
     properties: {
       listItems: {
         type: Array,
@@ -200,7 +189,10 @@ Custom property | Description | Default
 
       selectedValue: {
         type: String,
-        notify: true
+        notify: true,
+        value: function () {
+          return '';
+        }
       },
 
       displayItems: {
@@ -208,265 +200,225 @@ Custom property | Description | Default
         value: function () {
           return [];
         },
+        notify: true
       },
 
-        selectedItems: {
-          type: Array,
-          value: function () {
-            return [];
-          },
-          notify: true
+      selectedItems: {
+        type: Array,
+        value: function () {
+          return [];
         },
+        notify: true
+      },
 
-        disable: {
-          type: Boolean,
-          value: true,
-          notify: true
-        },
+      disable: {
+        type: Boolean,
+        value: true,
+        notify: true
+      },
 
-        isSelectedAll: {
-          type: Boolean,
-          value: false,
-          notify: true
-        },
+      isSelectedAll: {
+        type: Boolean,
+        value: false,
+        notify: true
+      },
 
-        isCommitAndNotifyEnabled: {
-          type: Boolean,
-          value: false,
+      isCommitAndNotifyEnabled: {
+        type: Boolean,
+        value: false,
+        notify: true
+      }
+    },
+
+    // listeners: {
+    //   'px-dropdown-value-changed': 'dpChanged'
+    // },
+
+    // dpChanged: function () {
+    //   console.log("Value Changed " + this.selectedValue);
+
+    //   if (this.selectedValue === "Rebooked-OAT") {
+    //     console.log("Value Changed again to enable  " + this.selectedValue);
+    //     this.disable = false;
+    //   } else if (this.selectedValue === "Rebooked-Other") {
+    //     console.log("Value Changed again to disable  " + this.selectedValue);
+    //     this.disable = true;
+    //   }
+    // },
+
+    _addSelectedItem: function (evt) {
+      this._getSelectedItem(evt.currentTarget.id, evt.currentTarget.checked);
+
+      this._enableCommitAndNotify();
+
+      if (this.selectedItems.length == this.listItems.length) {
+        this.isSelectedAll = true;
+      } else {
+        this.isSelectedAll = false;
+      }
+    },
+
+    _getSelectedItem: function (id, isChecked) {
+      var index = this.selectedItems.indexOf(id);
+      if (isChecked) {
+        if (index == -1) {
+          this.push("selectedItems", id);
         }
-      },
+      } else {
 
-      listeners: {
-        'px-dropdown-value-changed': 'dpChanged'
-      },
+        this.splice('selectedItems', index, 1);
+      }
+    },
 
-      dpChanged: function () {
-        console.log("Value Changed " + this.selectedValue);
-
-        if (this.selectedValue === "Rebooked-OAT") {
-          console.log("Value Changed again to enable  " + this.selectedValue);
-          this.disable = false;
-        } else if (this.selectedValue === "Rebooked-Other") {
-          console.log("Value Changed again to disable  " + this.selectedValue);
-          this.disable = true;
+    _selectAll: function (evt) {
+      this.isSelectedAll = !this.isSelectedAll;
+      if (this.listItems != null && this.listItems.length > 0) {
+        for (var i = 0; i < this.listItems.length; i++) {
+          this.listItems[i].checked = this.isSelectedAll;
+          this._updateItem(this.listItems[i]);
+          var confirmationNumber = this.listItems[i].confirmationNumber;
+          if (this.isSelectedAll && (this.selectedItems.indexOf(confirmationNumber) == -1)) {
+            this.push("selectedItems", confirmationNumber);
+          }
         }
-      },
 
-      _check: function (disable) {
-        if (disable) {
-          return "btn--disabled";
-        } else {
-          return "btn--tertiary";
+        if (!this.isSelectedAll) {
+          this.selectedItems = [];
         }
-      },
-
-      _addSelectedItem: function (evt) {
-        this._getSelectedItem(evt.currentTarget.id, evt.currentTarget.checked);
 
         this._enableCommitAndNotify();
+      }
+    },
 
-        if (this.selectedItems.length == this.listItems.length) {
-          this.isSelectedAll = true;
-        } else {
-          this.isSelectedAll = false;
+    _updateItem: function (listItem) {
+      var p = 'listItems.' + this.listItems.indexOf(listItem) + '.';
+      for (var i in listItem) {
+        if (listItem.hasOwnProperty(i)) {
+          this.notifyPath(p + i, listItem[i]);
         }
-      },
+      }
+    },
 
-      _getSelectedItem: function (id, isChecked) {
-        var index = this.selectedItems.indexOf(id);
-        if (isChecked) {
-          if (index == -1) {
-            this.push("selectedItems", id);
-          }
-        } else {
+    _enableCommitAndNotify: function () {
+      if (this.selectedItems != null && this.selectedItems.length > 0) {
+        this.isCommitAndNotifyEnabled = true;
+      } else {
+        this.isCommitAndNotifyEnabled = false;
+      }
+    },
 
-          this.splice('selectedItems', index, 1);
-        }
-      },
+    _isNotified: function (notificationStatus) {
+      if (notificationStatus == 'Notified') {
+        return this._getBtnClass(false);
+      }
+      return this._getBtnClass(true);
+    },
 
-      _selectAll: function (evt) {
-        this.isSelectedAll = !this.isSelectedAll;
-        if (this.listItems != null && this.listItems.length > 0) {
-          for (var i = 0; i < this.listItems.length; i++) {
-            this.listItems[i].checked = this.isSelectedAll;
-            this._updateItem(this.listItems[i]);
-            var confirmationNumber = this.listItems[i].confirmationNumber;
-            if (this.isSelectedAll && (this.selectedItems.indexOf(confirmationNumber) == -1)) {
-              this.push("selectedItems", confirmationNumber);
-            }
-          }
-
-          if (!this.isSelectedAll) {
-            this.selectedItems = [];
-          }
-
-          this._enableCommitAndNotify();
-        }
-      },
-
-      _updateItem: function (listItem) {
-        var p = 'listItems.' + this.listItems.indexOf(listItem) + '.';
-        for (var i in listItem) {
-          if (listItem.hasOwnProperty(i)) {
-            this.notifyPath(p + i, listItem[i]);
-          }
-        }
-      },
-
-      _enableCommitAndNotify: function () {
-        if (this.selectedItems != null && this.selectedItems.length > 0) {
-          this.isCommitAndNotifyEnabled = true;
-        } else {
-          this.isCommitAndNotifyEnabled = false;
-        }
-      },
-
-      _isNotified: function (notificationStatus) {
+    // TODO: Use this if commit statuses are already working and changing
+    // Use _isNotified for the mean time
+    _getNotifyBtnClass: function (rebookOption, notificationStatus, reflowStatus) {
+      // if (reflowStatus == 'Rebooked' || reflowStatus == 'Rebooked - OAT' || reflowStatus == 'N/A - RUL' || reflowStatus == 'N/A - CP') {
+      if (rebookOption == 'Rebooked' || rebookOption == 'Rebooked - OAT' || reflowStatus == 'Rebooked' || reflowStatus == 'Rebooked - OAT' || reflowStatus == 'N/A - RUL' || reflowStatus == 'N/A - CP') {
         if (notificationStatus == 'Notified') {
           return this._getBtnClass(false);
         }
         return this._getBtnClass(true);
-      },
+      } else {
+        return this._getBtnClass(false);
+      }
+    },
 
-      // TODO: Use this if commit statuses are already working and changing
-      // Use _isNotified for the mean time
-      _getNotifyBtnClass: function (notificationStatus, reflowStatus) {
-        console.log('_getNotifyBtnClass');
-        if (reflowStatus == 'Rebooked' || reflowStatus == 'Rebooked-OAT') {
-          if (notificationStatus == 'Notified') {
-            return this._getBtnClass(false);
-          }
-          return this._getBtnClass(true);
-        } else {
-          return this._getBtnClass(false);
-        }
+    _getBtnClass: function (isEnabled) {
+      if (isEnabled) {
+        return "btn--tertiary";
+      } else {
+        return "btn--disabled";
+      }
+    },
 
-      },
+    _hasSSR: function (listItem) {
+      return listItem.hasSSR();
+    },
 
-      _getBtnClass: function (isEnabled) {
-        if (isEnabled) {
-          return "btn--tertiary";
-        } else {
-          return "btn--disabled";
-        }
-      },
+    _getPaxCount: function (listItem) {
+      return listItem.getPaxCount();
+    },
 
-      _hasSSR: function (listItem) {
-        return listItem.hasSSR();
-      },
+    _getPrimaryFrequentFlyer: function (listItem) {
+      return listItem.getPrimaryFrequentFlyer();
+    },
 
-      _getPaxCount: function (listItem) {
-        return listItem.getPaxCount();
-      },
+    _computeLateness: function (listItem) {
+      return listItem.getLateness();
+    },
 
-      _getPrimaryFrequentFlyer: function (listItem) {
-        return listItem.getPrimaryFrequentFlyer();
-      },
+    _getRouteCategoryClass: function (routeCategory) {
+      return routeCategory.toLowerCase();
+    },
 
-      _computeLateness: function (listItem) {
-        return listItem.getLateness();
-      },
+    _getReflowFlights: function (listItem) {
+      return listItem.getReflowFlights();
+    },
 
-      _getRouteCategoryClass: function (routeCategory) {
-        return routeCategory.toLowerCase();
-      },
+    _getFlights: function (listItem) {
+      return listItem.getFlights();
+    },
 
-      _getReflowFlights: function (listItem) {
-        return listItem.getReflowFlights();
-      },
+    _formatDateTime: function (date, format) {
+      return moment(date).utc().format(format);
+    },
 
-      _getFlights: function (listItem) {
-        return listItem.getFlights();
-      },
+    _isReflowFlightsVisiable: function (reflowStatus) {
+      return reflowStatus != "N/A – CP" && reflowStatus != "N/A - RUL";
+    },
 
-      _formatDateTime: function (date, format) {
-        return moment(date).utc().format(format);
-      },
+    _isReflowNACP: function (reflowStatus) {
+      return reflowStatus == "N/A – CP";
+    },
 
-      _isReflowAvailable: function (reflowStatus) {
-        return reflowStatus == "Available";
-      },
+    _isReflowNARUL: function (reflowStatus) {
+      return reflowStatus == "N/A - RUL";
+    },
 
-      _isReflowNACP: function (reflowStatus) {
-        return reflowStatus == "N/A - CP";
-      },
+    _isReflowAvailableOAT: function (listItem) {
+      return listItem.reflowStatus == "Available – OAT";
+    },
 
-      _isReflowNARUL: function (reflowStatus) {
-        return reflowStatus == "N/A - RUL";
-      },
+    _notifySingle: function (evt) {
+      this._getSelectedItem(evt.currentTarget.id, true);
+      this._notify();
+    },
 
-      _isReflowNACP: function (listItem) {
-        console.log("N/A – CP" + listItem.reflowStatus);
-        console.log("N/A – CP" + listItem.reflowStatus == "N/A – CP");
-        console.log("N/A – CP" + listItem.reflowStatus === "N/A – CP");
-        return listItem.reflowStatus == "N/A – CP";
-      },
-
-      _isReflowNARUL: function (listItem) {
-        return listItem.reflowStatus == "N/A - RUL";
-      },
-
-      _isReflowAvailableOAT: function (listItem) {
-        console.log("Available-OAT " + listItem.reflowStatus);
-        return listItem.reflowStatus == "Available – OAT";
-      },
-
-      _isReflowRebooked: function (listItem) {
-        return listItem.reflowStatus == "Rebooked";
-      },
-
-      _isReflowRebookedOAT: function (listItem) {
-        console.log("Rebooked - OAT" + listItem.reflowStatus);
-        console.log("Rebooked - OAT" + listItem.reflowStatus == "Rebooked - OAT");
-        console.log("Rebooked - OAT" + listItem.reflowStatus === "Rebooked - OAT");
-        return listItem.reflowStatus == "Rebooked - OAT";
-      },
-
-      _isReflowRebookedOther: function (listItem) {
-        return listItem.reflowStatus == "Rebooked - Other";
-      },
-
-      _isReflowFailedCP: function (listItem) {
-        return listItem.reflowStatus == "Failed - CP";
-      },
-
-      _isReflowFailedNetCXN: function (listItem) {
-        return listItem.reflowStatus == "Failed - NET/CXN";
-      },
-
-      _notifySingle: function (evt) {
-        this._getSelectedItem(evt.currentTarget.id, true);
-        this._notify();
-      },
-
-      _notify: function () {
-        var pnrsToNotify = [];
-        for (var i = 0; i < this.listItems.length; i++) {
-          var listItem = this.listItems[i];
-          for (var j = 0; j < this.selectedItems.length; j++) {
-            if (listItem.confirmationNumber == this.selectedItems[j] && listItem.notificationStatus != 'Notified') {
-              pnrsToNotify.push(this.selectedItems[j]);
-            };
-          }
-        }
-
-        if (pnrsToNotify.length > 0) {
-          this.fire('notify', { selectedPNRs: pnrsToNotify });
-        } else {
-          this.$.notifyModal.modalButtonClicked();
-        }
-
-        this._clearSelectedItems();
-      },
-
-      _clearSelectedItems: function () {
-        this.selectedItems = [];
-        for (var i = 0; i < this.listItems.length; i++) {
-          var listItem = this.listItems[i];
-          listItem.checked = false;
+    _notify: function () {
+      var pnrsToNotify = [];
+      for (var i = 0; i < this.listItems.length; i++) {
+        var listItem = this.listItems[i];
+        for (var j = 0; j < this.selectedItems.length; j++) {
+          if (listItem.confirmationNumber == this.selectedItems[j] && (listItem.rebookOption == 'Rebooked - OAT' || listItem.reflowStatus == 'Rebooked' || listItem.reflowStatus == 'Rebooked - OAT' || listItem.reflowStatus == 'N/A - RUL' || listItem.reflowStatus == 'N/A - CP') && listItem.notificationStatus != 'Notified') {
+          // if (listItem.confirmationNumber == this.selectedItems[j] && (listItem.reflowStatus == 'Rebooked' || listItem.reflowStatus == 'Rebooked - OAT' || listItem.reflowStatus == 'N/A - RUL' || listItem.reflowStatus == 'N/A - CP') && listItem.notificationStatus != 'Notified') {
+            pnrsToNotify.push(this.selectedItems[j]);
+          };
         }
       }
-    
+
+      if (pnrsToNotify.length > 0) {
+        this.fire('notify', { selectedPNRs: pnrsToNotify });
+      } else {
+        this.$.notifyModal.modalButtonClicked();
+      }
+
+      this._clearSelectedItems();
+    },
+
+    _clearSelectedItems: function () {
+      this.selectedItems = [];
+      for (var i = 0; i < this.listItems.length; i++) {
+        var listItem = this.listItems[i];
+        this.notifyPath('listItems.' + i + '.checked', false);
+      }
+      this.isSelectedAll = false;
+    }
+
   });
 
 </script>
