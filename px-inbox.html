@@ -3,9 +3,9 @@
     siblings. When this component is run from its own repo (e.g. tests, examples), we assume the server is started with
     'gulp serve' (or similar server setup) to enable correct finding of bower dependencies for local runs.
 -->
-<link rel="import" href="../polymer/polymer.html"/>
+<link rel="import" href="../polymer/polymer.html" />
 <link rel="import" href="../px-dropdown/px-dropdown.html" />
-<link rel="import" href="px-inbox-content.html"/>
+<link rel="import" href="px-inbox-content.html" />
 <link rel="import" href="css/px-inbox-styles.html">
 
 <script src="../moment/moment.js"></script>
@@ -49,7 +49,7 @@ Custom property | Description | Default
         <div class="flex flex--justify disruption-header">
           <div class="flex flex--left">
             <span class="subtitle" style="color: #8c8c8d; padding-right: 10px">Sort by:</span>
-              <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class$="fa {{_getSortOrder(isReverse)}}" aria-hidden="true"></i></span>
+            <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class$="fa {{_getSortOrder(isReverse)}}" aria-hidden="true"></i></span>
             <span class="subtitle" style="color:#129ec2">Departure Time</span>
           </div>
           <div class="flex flex--right">
@@ -80,7 +80,8 @@ Custom property | Description | Default
               <li class="list-ui__item pointer disruption-items">
                 <div class="flex flex--justify">
                   <div class="u-1/6 flex__item flex__item--middle">
-                    <input id="{{listItem.flightID}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}" on-change="_addSelectedItem" />
+                    <input id="{{listItem.flightID}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}" on-change="_addSelectedItem"
+                    />
                   </div>
                   <div class="text u-2/6">
                     <template is="dom-if" if="{{listItem.disruption.cancel}}">
@@ -160,7 +161,7 @@ Custom property | Description | Default
 
       selectedItems: {
         type: Array,
-        value: function() {
+        value: function () {
           return [];
         },
         notify: true
@@ -186,18 +187,18 @@ Custom property | Description | Default
 
       selectedDisruptedFlights: {
         type: Array,
-        value: function() {
+        value: function () {
           return [];
         },
         notify: true
       }
     },
 
-    _formatImpacted: function(businessCompartmentPax, coachCompartmentPax) {
+    _formatImpacted: function (businessCompartmentPax, coachCompartmentPax) {
       var impactedString = '';
 
       if (businessCompartmentPax != null) {
-          impactedString += "J" + businessCompartmentPax;
+        impactedString += "J" + businessCompartmentPax;
       }
 
       if (coachCompartmentPax != null) {
@@ -207,7 +208,7 @@ Custom property | Description | Default
       return impactedString;
     },
 
-    _formatMisconnects: function(businessClassCount, coachClassCount) {
+    _formatMisconnects: function (businessClassCount, coachClassCount) {
       var misconnects = '';
 
       if (businessClassCount != null) {
@@ -221,23 +222,23 @@ Custom property | Description | Default
       return misconnects;
     },
 
-    _getDuration: function(minutes) {
+    _getDuration: function (minutes) {
       return moment.duration(minutes, "minutes").format("hh:mm", { trim: false });
     },
 
-    _formatStation: function(station) {
+    _formatStation: function (station) {
       return station.substr(3, 7);
     },
 
-    _getDelayedColor: function(departureDelayMinutes) {
-        if (departureDelayMinutes > 15 && departureDelayMinutes < 180) {
-          return "delayed-15";
-        } else if (departureDelayMinutes >= 180) {
-          return "delayed-3"
-        }
+    _getDelayedColor: function (departureDelayMinutes) {
+      if (departureDelayMinutes > 15 && departureDelayMinutes < 180) {
+        return "delayed-15";
+      } else if (departureDelayMinutes >= 180) {
+        return "delayed-3"
+      }
     },
-    
-    _sort: function() {
+
+    _sort: function () {
       if (this.listItems != null && this.listItems.length > 0) {
         this.isReverse = !this.isReverse;
         this.listItems = this.listItems.reverse()
@@ -245,7 +246,7 @@ Custom property | Description | Default
       }
     },
 
-    _getOrder: function() {
+    _getOrder: function () {
       return this.isReverse;
     },
 
@@ -264,19 +265,18 @@ Custom property | Description | Default
       } else {
         this.isSelectedAll = false;
       }
-  },
+    },
 
-  _enableSolve: function() {
-    if (this.selectedItems != null && this.selectedItems.length > 0) {
-      this.isSolveEnabled = true;
-    } else {
-      this.isSolveEnabled = false;
-    }
-  },
+    _enableSolve: function () {
+      if (this.selectedItems != null && this.selectedItems.length > 0) {
+        this.isSolveEnabled = true;
+      } else {
+        this.isSolveEnabled = false;
+      }
+    },
 
-  _selectAll: function(evt) {
-    this.isSelectedAll = !this.isSelectedAll;
-    if (this.isSelectedAll) {
+    _selectAll: function (evt) {
+      this.isSelectedAll = !this.isSelectedAll;
       if (this.listItems != null && this.listItems.length > 0) {
         for (var i = 0; i < this.listItems.length; i++) {
           this.listItems[i].checked = this.isSelectedAll;
@@ -287,48 +287,43 @@ Custom property | Description | Default
           }
         }
         this._enableSolve();
-      }
-    } else {
-      this.selectedItems = [];
-    }
-  },
 
-  _updateItem: function(listItem, index) {
-    var p = 'listItems.' + index + '.';
-    for (var i in listItem) {
-      if (listItem.hasOwnProperty(i)) {
-        this.notifyPath(p + i, listItem[i]);
-      }
-    }
-  },
-
-  _solve: function() {
-    for (var i = 0; i < this.selectedItems.length > 0; i++) {
-      for (var j = 0; j < this.listItems.length; j++) {
-        if (this.selectedItems[i] == this.listItems[j].flightID) {
-          var disruptedFlight = this.listItems[j];
-          disruptedFlight.status = "solved";
-          this._updateItem(disruptedFlight);
+        if (!this.isSelectedAll) {
+          this.selectedItems = [];
         }
       }
-    }
-    this.fire('solve', { selectedDisruptedFlightIds: this.selectedItems });
-  },
+    },
 
-  _hasSolutions: function(contentItems) {
-    if (contentItems != null && contentItems.length > 0) {
-      return true;
-    } else {
-      return false;
+    _updateItem: function (listItem, index) {
+      var p = 'listItems.' + index + '.';
+      for (var i in listItem) {
+        if (listItem.hasOwnProperty(i)) {
+          this.notifyPath(p + i, listItem[i]);
+        }
+      }
+    },
+
+    _solve: function () {
+      if (this.selectedItems != null && this.selectedItems.length > 0) {
+        this.fire('solve', { selectedDisruptedFlightIds: this.selectedItems });
+      }
+    },
+
+    _hasSolutions: function (contentItems) {
+      if (contentItems != null && contentItems.length > 0) {
+        return true;
+      } else {
+        return false;
+      }
+    },
+
+    _getSortOrder: function (isReverse) {
+      if (isReverse) {
+        return 'fa-arrow-circle-down';
+      } else {
+        return 'fa-arrow-circle-up';
+      }
     }
-  },
-  
-  _getSortOrder: function(isReverse) {
-    if (isReverse) {
-      return 'fa-arrow-circle-down';
-    } else {
-      return 'fa-arrow-circle-up';
-    }
-  }
-});
+  });
+
 </script>
