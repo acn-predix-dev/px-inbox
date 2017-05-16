@@ -323,7 +323,7 @@ Custom property | Description | Default
     },
 
     _getNotifyBtnClass: function (notificationStatus, reflowStatus) {
-      if (reflowStatus == 'Rebooked' || reflowStatus == 'Rebooked - OAT' || reflowStatus == 'N/A - RUL' || reflowStatus == 'N/A - CP') {
+      if (reflowStatus == 'Rebooked' || reflowStatus == 'Rebooked - OAT' || reflowStatus == 'N/A - RUL' || reflowStatus == 'N/A – CP') {
         if (notificationStatus == 'Notified') {
           return this._getBtnClass(false);
         }
@@ -399,7 +399,7 @@ Custom property | Description | Default
       for (var i = 0; i < this.listItems.length; i++) {
         var listItem = this.listItems[i];
         for (var j = 0; j < this.selectedItems.length; j++) {
-          if (listItem.confirmationNumber == this.selectedItems[j] && (listItem.reflowStatus == 'Rebooked' || listItem.reflowStatus == 'Rebooked - OAT' || listItem.reflowStatus == 'N/A - RUL' || listItem.reflowStatus == 'N/A - CP') && listItem.notificationStatus != 'Notified') {
+          if (listItem.confirmationNumber == this.selectedItems[j] && (listItem.reflowStatus == 'Rebooked' || listItem.reflowStatus == 'Rebooked - OAT' || listItem.reflowStatus == 'N/A - RUL' || listItem.reflowStatus == 'N/A – CP') && listItem.notificationStatus != 'Notified') {
             pnrsToNotify.push(this.selectedItems[j]);
           };
         }
