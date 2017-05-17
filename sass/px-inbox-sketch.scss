@@ -282,6 +282,21 @@ $inuit-enable-margins--small: true;
   border-bottom: 1px solid #b6c3cc;
 }
 
+:host ::content #dropcell {
+  background-color: transparent;
+  border: none;
+  width: 140px;
+}
+
+:host ::content #dropcell:hover {
+  background-color: transparent;
+  border: none;
+}
+
+// px-dropdown {
+//   --px-dropdown-border-color: transparent;
+// }
+
 .disruption-header {
   height: 50px;
   padding: .66667rem;
@@ -332,3 +347,4 @@ $inuit-enable-margins--small: true;
 :host ::content #div-donut {
     width: 300px;
 }
+

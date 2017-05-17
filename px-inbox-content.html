@@ -3,14 +3,15 @@
     siblings. When this component is run from its own repo (e.g. tests, examples), we assume the server is started with
     'gulp serve' (or similar server setup) to enable correct finding of bower dependencies for local runs.
 -->
-<link rel="import" href="../polymer/polymer.html"/>
+<link rel="import" href="../polymer/polymer.html" />
 <link rel="import" href="css/px-inbox-styles.html">
 <link rel="import" href="../px-dropdown/px-dropdown.html" />
 <script src="../moment/moment.js"></script>
 <script src="../lodash/lodash.js"></script>
 <script src="../moment-duration-format/lib/moment-duration-format.js"></script>
 <link rel="import" href="../px-table-view/px-table-view.html" />
-<link rel="import" href="../px-vis-pie-chart/px-vis-pie-chart.html"/>
+<link rel="import" href="../px-vis-pie-chart/px-vis-pie-chart.html" />
+<link rel="import" href="../px-modal/px-modal.html" />
 
 <!--
 
@@ -47,38 +48,26 @@ Custom property | Description | Default
     <style include="px-inbox-styles"></style>
     <div class="flex flex--col">
       <div id="flights-pane" class="flex flex--justify">
-          <div class="flex flex--left">
-            <template is="dom-repeat" items="{{selectedItems}}" as="selectedItem">
-              <span>{{selectedItem.flightID}}</span></div>
-            </template>
-          </div>
-          <div id="div-donut" class="flex flex--right">
-            <px-vis-pie-chart 
-              prevent-resize="true" 
-              width="100" 
-              height="100" 
-              inner-radius=".7"
-              chart-horizontal-alignment="right" 
-              chart-vertical-alignment="center" 
-              margin='{"top":"10","bottom":"10","left":"0","right":"0"}' 
-              register-config='{"type":"vertical","width":0}' 
-              chart-data='[
+        <div class="flex flex--left">
+          <template is="dom-repeat" items="{{displayItems}}" as="displayItem">
+            <div>{{displayItem.flightID}}</div>
+            <br>
+        </template>
+        </div>
+        <div id="div-donut" class="flex flex--right">
+          <px-vis-pie-chart prevent-resize="true" width="100" height="100" inner-radius=".7" chart-horizontal-alignment="right" chart-vertical-alignment="center"
+            margin='{"top":"10","bottom":"10","left":"0","right":"0"}' register-config='{"type":"vertical","width":0}' chart-data='[
                   {"x":1,"y":"Terminating","colorIndex":0,"backgroundColor":"rgb(93,165,218)"},
                   {"x":1,"y":"Connecting","colorIndex":5,"backgroundColor":"rgb(178,118,178)"},
                   {"x":1,"y":"Misconnecting","colorIndex":2,"backgroundColor":"rgb(96,189,104)"}
-                ]' 
-              series-config='{"mySerie":{"y":"y","x":"x"}}' 
-              donut="true" 
-              show-title="true"
-              title="J8 Y80" 
-              title-spacing="5" 
-              use-percentage="false">
-            </px-vis-pie-chart>
-          </div>
+                ]' series-config='{"mySerie":{"y":"y","x":"x"}}' donut="true" show-title="true" title="J8 Y80" title-spacing="5"
+            use-percentage="false">
+          </px-vis-pie-chart>
+        </div>
       </div>
       <div id="solution-window-header" class="flex flex--justify">
         <div class="solution-item-row solution-item-checkbox flex__item--middle">
-          <input class="px-inbox-checkbox" type="checkbox" />
+          <input class="px-inbox-checkbox" type="checkbox" checked="{{isSelectedAll::change}}" on-change="_selectAll" />
         </div>
         <div class="text solution-item-row solution-item-pnr flex__item--middle">
           <span>PNR</span>
@@ -87,10 +76,10 @@ Custom property | Description | Default
           <span>Itinerary</span>
         </div>
         <div class="text solution-item-row solution-item-commit flex__item--middle">
-          <span><button class="btn btn--tertiary">Commit All</button></span>
+          <span><button class$="btn {{_getBtnClass(isCommitAndNotifyEnabled)}}">Commit</button></span>
         </div>
         <div class="text solution-item-row solution-item-notify flex__item--middle">
-          <span><button class="btn btn--tertiary">Notify All</button></span>
+          <span><button class$="btn {{_getBtnClass(isCommitAndNotifyEnabled)}}" on-click="_notify">Notify</button></span>
         </div>
         <div class="text solution-item-row solution-item-color flex__item--middle">
           <span class="fa-stack fa-md">
@@ -105,14 +94,16 @@ Custom property | Description | Default
             <li class="list-ui__item pointer">
               <div class="flex flex--justify">
                 <div class="solution-item-row solution-item-checkbox flex__item--top">
-                  <input class="px-inbox-checkbox" type="checkbox" />
+                  <input id="{{listItem.confirmationNumber}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}"
+                    on-change="_addSelectedItem" />
                 </div>
                 <div class="text solution-item-row solution-item-pnr flex__item--top">
                   <span class="title" style="text-transform: uppercase">{{ listItem.confirmationNumber }}</span>
                   <br/>
                   <span class="subtitle">Lateness +{{ _computeLateness(listItem)}}</span>
                   <br/>
-                  <span class="subtitle">PAX: {{ _getPaxCount(listItem) }} </span><span class="subtitle">SSR: {{ _hasSSR(listItem)}} </span><span class="subtitle">FF: {{ _getPrimaryFrequentFlyer(listItem) }}</span>
+                  <span class="subtitle">PAX: {{ _getPaxCount(listItem) }} </span><span class="subtitle">SSR: {{ _hasSSR(listItem)}} </span>
+                  <span class="subtitle">FF: {{ _getPrimaryFrequentFlyer(listItem) }}</span>
                 </div>
                 <div class="text solution-item-row solution-item-itinerary flex__item--top">
                   <div class="current flex">
@@ -120,7 +111,7 @@ Custom property | Description | Default
                       <span class="subtitle">Current</span>
                     </div>
                     <div class="u-5/6">
-                      <template is="dom-repeat" items="{{ _getFlights(listItem)}}" as="flight">
+                      <template is="dom-repeat" items="{{_getFlights(listItem)}}" as="flight">
                         <span class="subtitle">{{ flight.operatingCarrier }} {{ flight.flightNumber }} {{ flight.origin }}-{{ flight.destination }} [{{ _formatDateTime(flight.departureTime, 'HH:mm') }}-{{ _formatDateTime(flight.arrivalTime, 'HH:mm') }}]</span>
                         <br>
                       </template>
@@ -132,34 +123,44 @@ Custom property | Description | Default
                       <span class="subtitle">New</span>
                     </div>
                     <div class="u-5/6">
-                      <template is="dom-if" if="{{_isReflowAvailable(listItem)}}">
+                      <template is="dom-if" if="{{_isReflowFlightsVisible(listItem.reflowStatus)}}">
                         <template is="dom-repeat" items="{{ _getReflowFlights(listItem)}}" as="reflowFlight">
                           <span class="title">{{ reflowFlight.operatingCarrier }} {{ reflowFlight.flightNumber }} {{ reflowFlight.origin }}-{{ reflowFlight.destination }} [{{ _formatDateTime(reflowFlight.departureTime, 'HH:mm')}}-{{ _formatDateTime(reflowFlight.arrivalTime, 'HH:mm')}}]</span>
                           <br>
                         </template>
                       </template>
-                      <template is="dom-if" if="{{_isReflowNACP(listItem)}}">
+                      <template is="dom-if" if="{{_isReflowNACP(listItem.reflowStatus)}}">
                         <span class="title">No available seat found.</span>
                       </template>
-                      <template is="dom-if" if="{{_isReflowNARUL(listItem)}}">
+                      <template is="dom-if" if="{{_isReflowNARUL(listItem.reflowStatus)}}">
                         <span class="title">Rule Violation.</span>
                       </template>
                     </div>
                   </div>
                 </div>
                 <div class="text solution-item-row solution-item-commit flex__item--top">
-                  <span><button class="btn btn--tertiary">Commit</button></span>
+                  <span><button class$="btn {{_getCommitBtnClass(listItem.reflowStatus)}}">Commit</button></span>
                   <br/>
-                  <span class="subtitle">{{ listItem.reflowStatus }}</span>
+                  <template is="dom-if" if="{{_isReflowAvailableOAT(listItem)}}">
+                    <px-dropdown display-value="{{listItem.reflowStatus}}" value="{{listItem.reflowStatus}}">
+                      <px-dropdown-content extend-dropdown='true' extend-dropdown-by='25' max-cont-character-width='10' items='[ {"key":"1","val":"Rebooked - OAT"},{"key":"2","val":"Rebooked - Other"}]'>
+                      </px-dropdown-content>
+                    </px-dropdown>
+                  </template>
+
+                  <template is="dom-if" if="{{!_isReflowAvailableOAT(listItem)}}">
+                    <span class="subtitle">{{ listItem.reflowStatus }}</span>
+                  </template>
+
                 </div>
                 <div class="text solution-item-row solution-item-notify flex__item--top">
-                  <span><button class="btn btn--tertiary">Notify</button></span>
+                  <span><button id="{{listItem.confirmationNumber}}" class$="btn {{_getNotifyBtnClass(listItem.notificationStatus, listItem.reflowStatus)}}" on-click="_notifySingle">Notify</button></span>
                   <br/>
                   <span class="subtitle">{{ listItem.notificationStatus }}</span>
                 </div>
                 <div class="text solution-item-row solution-item-color flex__item--top">
                   <span>
-                    <i class$="fa fa-circle {{ _getRouteCategoryClass(listItem.routeCategory) }}"></i>
+                    <i class$="fa fa-circle {{_getRouteCategoryClass(listItem.routeCategory)}}"></i>
                   </span>
                 </div>
               </div>
@@ -168,33 +169,35 @@ Custom property | Description | Default
         </ul>
       </div>
     </div>
+    <px-modal id="notifyModal" btn-modal-positive="OK" modal-heading="Notification Service">
+      <p>There are no PNRs to notify.</p>
+    </px-modal>
   </template>
 </dom-module>
 
 <script>
   Polymer({
-
     is: 'px-inbox-content',
-
-    /**
-     * Event that is fired when the selected item is changed in the list component.
-     * You should listen for this event and then access selectedItem to get the ID of the item.
-     * @event selected-item-changed
-     */
-
     properties: {
-      /**
-       * Array of items to include in the list. Each item in the array should be an object with:
-       * - id (used for fetching the details view)
-       * - title
-       * - subtitle
-       * - severity (one of "important", "error", "warning", or "information")
-       * - date (optional, should be valid <a href="https://www.w3.org/TR/NOTE-datetime">8601 date strings</a>)
-       * @property listItems
-       */
       listItems: {
         type: Array,
-        value: function() {
+        value: function () {
+          return [];
+        },
+        notify: true
+      },
+
+      selectedValue: {
+        type: String,
+        notify: true,
+        value: function () {
+          return '';
+        }
+      },
+
+      displayItems: {
+        type: Array,
+        value: function () {
           return [];
         },
         notify: true
@@ -202,59 +205,224 @@ Custom property | Description | Default
 
       selectedItems: {
         type: Array,
-        value: function() {
+        value: function () {
           return [];
         },
+        notify: true
+      },
+
+      disable: {
+        type: Boolean,
+        value: true,
+        notify: true
+      },
+
+      isSelectedAll: {
+        type: Boolean,
+        value: false,
+        notify: true
+      },
+
+      isCommitAndNotifyEnabled: {
+        type: Boolean,
+        value: false,
         notify: true
       }
     },
 
-    _hasSSR: function(listItem) {
+    // listeners: {
+    //   'px-dropdown-value-changed': 'dpChanged'
+    // },
+
+    // dpChanged: function () {
+    //   console.log("Value Changed " + this.selectedValue);
+
+    //   if (this.selectedValue === "Rebooked-OAT") {
+    //     console.log("Value Changed again to enable  " + this.selectedValue);
+    //     this.disable = false;
+    //   } else if (this.selectedValue === "Rebooked-Other") {
+    //     console.log("Value Changed again to disable  " + this.selectedValue);
+    //     this.disable = true;
+    //   }
+    // },
+
+    _addSelectedItem: function (evt) {
+      this._getSelectedItem(evt.currentTarget.id, evt.currentTarget.checked);
+
+      this._enableCommitAndNotify();
+
+      if (this.selectedItems.length == this.listItems.length) {
+        this.isSelectedAll = true;
+      } else {
+        this.isSelectedAll = false;
+      }
+    },
+
+    _getSelectedItem: function (id, isChecked) {
+      var index = this.selectedItems.indexOf(id);
+      if (isChecked) {
+        if (index == -1) {
+          this.push("selectedItems", id);
+        }
+      } else {
+
+        this.splice('selectedItems', index, 1);
+      }
+    },
+
+    _selectAll: function (evt) {
+      this.isSelectedAll = !this.isSelectedAll;
+      if (this.listItems != null && this.listItems.length > 0) {
+        for (var i = 0; i < this.listItems.length; i++) {
+          this.listItems[i].checked = this.isSelectedAll;
+          this._updateItem(this.listItems[i]);
+          var confirmationNumber = this.listItems[i].confirmationNumber;
+          if (this.isSelectedAll && (this.selectedItems.indexOf(confirmationNumber) == -1)) {
+            this.push("selectedItems", confirmationNumber);
+          }
+        }
+
+        if (!this.isSelectedAll) {
+          this.selectedItems = [];
+        }
+
+        this._enableCommitAndNotify();
+      }
+    },
+
+    _updateItem: function (listItem) {
+      var p = 'listItems.' + this.listItems.indexOf(listItem) + '.';
+      for (var i in listItem) {
+        if (listItem.hasOwnProperty(i)) {
+          this.notifyPath(p + i, listItem[i]);
+        }
+      }
+    },
+
+    _enableCommitAndNotify: function () {
+      if (this.selectedItems != null && this.selectedItems.length > 0) {
+        this.isCommitAndNotifyEnabled = true;
+      } else {
+        this.isCommitAndNotifyEnabled = false;
+      }
+    },
+
+    _isNotified: function (notificationStatus) {
+      if (notificationStatus == 'Notified') {
+        return this._getBtnClass(false);
+      }
+      return this._getBtnClass(true);
+    },
+
+    _getCommitBtnClass: function (reflowStatus) {
+      if (reflowStatus == 'Available' || reflowStatus == 'Failed - CP' || reflowStatus == 'Failed - NET/CXN') {
+        return this._getBtnClass(true);
+      } else {
+        return this._getBtnClass(false);
+      }
+    },
+
+    _getNotifyBtnClass: function (notificationStatus, reflowStatus) {
+      if (reflowStatus == 'Rebooked' || reflowStatus == 'Rebooked - OAT' || reflowStatus == 'N/A - RUL' || reflowStatus == 'N/A – CP') {
+        if (notificationStatus == 'Notified') {
+          return this._getBtnClass(false);
+        }
+        return this._getBtnClass(true);
+      } else {
+        return this._getBtnClass(false);
+      }
+    },
+
+    _getBtnClass: function (isEnabled) {
+      if (isEnabled) {
+        return "btn--tertiary";
+      } else {
+        return "btn--disabled";
+      }
+    },
+
+    _hasSSR: function (listItem) {
       return listItem.hasSSR();
     },
 
-    _getPaxCount: function(listItem) {
+    _getPaxCount: function (listItem) {
       return listItem.getPaxCount();
     },
 
-    _getPrimaryFrequentFlyer: function(listItem) {
+    _getPrimaryFrequentFlyer: function (listItem) {
       return listItem.getPrimaryFrequentFlyer();
     },
-    _computeLateness: function(listItem) {
+
+    _computeLateness: function (listItem) {
       return listItem.getLateness();
     },
 
-    _getRouteCategoryClass: function(routeCategory) {
+    _getRouteCategoryClass: function (routeCategory) {
       return routeCategory.toLowerCase();
     },
 
-    _getReflowFlights: function(listItem) {
+    _getReflowFlights: function (listItem) {
       return listItem.getReflowFlights();
     },
 
-    _getFlights: function(listItem) {
+    _getFlights: function (listItem) {
       return listItem.getFlights();
     },
 
-    _formatDateTime: function(date, format) {
+    _formatDateTime: function (date, format) {
       return moment(date).utc().format(format);
     },
 
-    _isReflowAvailable: function(listItem) {
-      return listItem.reflowStatus == "Available";
+    _isReflowFlightsVisible: function (reflowStatus) {
+      return reflowStatus != "N/A – CP" && reflowStatus != "N/A - RUL";
     },
 
-    _isReflowNACP: function(listItem) {
-      return listItem.reflowStatus == "N/A - CP";
+    _isReflowNACP: function (reflowStatus) {
+      return reflowStatus == "N/A – CP";
     },
 
-    _isReflowNARUL: function(listItem) {
-      return listItem.reflowStatus == "N/A - RUL";
+    _isReflowNARUL: function (reflowStatus) {
+      return reflowStatus == "N/A - RUL";
     },
 
-    ready: function() {
-      console.log(this.selectedItems);
+    _isReflowAvailableOAT: function (listItem) {
+      return listItem.reflowStatus == "Available – OAT";
+    },
+
+    _notifySingle: function (evt) {
+      this._getSelectedItem(evt.currentTarget.id, true);
+      this._notify();
+    },
+
+    _notify: function () {
+      var pnrsToNotify = [];
+      for (var i = 0; i < this.listItems.length; i++) {
+        var listItem = this.listItems[i];
+        for (var j = 0; j < this.selectedItems.length; j++) {
+          if (listItem.confirmationNumber == this.selectedItems[j] && (listItem.reflowStatus == 'Rebooked' || listItem.reflowStatus == 'Rebooked - OAT' || listItem.reflowStatus == 'N/A - RUL' || listItem.reflowStatus == 'N/A – CP') && listItem.notificationStatus != 'Notified') {
+            pnrsToNotify.push(this.selectedItems[j]);
+          };
+        }
+      }
+
+      if (pnrsToNotify.length > 0) {
+        this.fire('notify', { selectedPNRs: pnrsToNotify });
+      } else {
+        this.$.notifyModal.modalButtonClicked();
+      }
+
+      this._clearSelectedItems();
+    },
+
+    _clearSelectedItems: function () {
+      this.selectedItems = [];
+      for (var i = 0; i < this.listItems.length; i++) {
+        var listItem = this.listItems[i];
+        this.notifyPath('listItems.' + i + '.checked', false);
+      }
+      this.isSelectedAll = false;
     }
 
   });
+
 </script>
