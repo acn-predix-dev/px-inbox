@@ -26,7 +26,8 @@ common/abstract rules go in px-inbox-sketch.scss, not in this file.
 // Component
 
 .list {
-  border-right: 2px solid #d9e1e6;
+  // border-right: 2px solid #d9e1e6;
+  border-right: 1px solid #b6c3cc;
 }
 .subtitle, .info {
   color: var(--px-inbox-secondary-text-color, $gray6);

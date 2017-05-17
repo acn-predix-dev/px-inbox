@@ -76,7 +76,6 @@ $inuit-enable-btn--bare--primary : true;
 // Component
 .container {
   overflow: hidden;
-  margin-top: 50px;
 }
 
 .list {
@@ -177,7 +176,7 @@ $inuit-enable-margins--small: true;
 }
 
 .fa-stack-1x, .fa-stack-2x {
-  bottom: 10;
+  bottom: 3;
   left: 4;
 }
 
@@ -224,7 +223,7 @@ $inuit-enable-margins--small: true;
 
 #list {
   flex: 0 1 auto;
-  height: calc(100vh - 50px);
+  // height: calc(100vh - 50px);
 }
 
 #detail {

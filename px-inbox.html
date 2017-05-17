@@ -45,7 +45,7 @@ Custom property | Description | Default
   <template>
     <style include="px-inbox-styles"></style>
     <div id="container" class="container flex">
-      <div id="list" class="list u-1/6-desk u-1/4-lap">
+      <div id="list" class="list">
         <div class="flex flex--justify disruption-header">
           <div class="flex flex--left">
             <span class="subtitle" style="color: #8c8c8d; padding-right: 10px">Sort by:</span>
@@ -53,9 +53,9 @@ Custom property | Description | Default
             <span class="subtitle" style="color:#129ec2">Departure Time</span>
           </div>
           <div class="flex flex--right">
-            <span class="fa-stack fa-md">
-              <i class="fa fa-circle-o fa-stack-2x" style="font-size: 1.7rem;"></i>
-              <i class="fa fa-filter fa-stack-1x" style="font-size: 0.8rem; bottom:7;"></i>
+            <span class="fa-stack" style="margin-top: -5px;">
+              <i class="fa fa-circle-o fa-stack-2x"></i>
+              <i class="fa fa-filter fa-stack-1x"></i>
             </span>
           </div>
         </div>
@@ -113,7 +113,7 @@ Custom property | Description | Default
           </ul>
         </div>
       </div>
-      <div id="detail" class="detail u-5/6-desk u-3/4-lap">
+      <div id="detail" class="detail">
         <template is="dom-if" if="{{_hasSolutions(contentItems)}}">
           <px-inbox-content list-items="{{contentItems}}" display-items="{{selectedDisruptedFlights}}"></px-inbox-content>
         </template>
@@ -286,11 +286,12 @@ Custom property | Description | Default
             this.push("selectedItems", flightId);
           }
         }
-        this._enableSolve();
 
         if (!this.isSelectedAll) {
           this.selectedItems = [];
         }
+
+        this._enableSolve();
       }
     },
 
