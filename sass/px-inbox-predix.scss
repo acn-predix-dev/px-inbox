@@ -39,7 +39,7 @@ common/abstract rules go in px-inbox-sketch.scss, not in this file.
 .list-ui__item.selected {
   background-color: var(--px-inbox-li-background-color--selected, $select-blue-default);
   color: var(--px-inbox-li-text-color--selected, $white);
-  .subtitle, .info {
+  .subtitle, .info, .cancelled, .delayed-3, .delayed-15 {
     color: var(--px-inbox-li-text-color--selected, $white);
   }
 }

@@ -77,18 +77,18 @@ Custom property | Description | Default
         <div class="disruption-scrollable">
           <ul class="list-ui list-ui--small">
             <template is="dom-repeat" items="{{listItems}}" as="listItem">
-              <li class="list-ui__item pointer disruption-items">
+              <!--<li class="list-ui__item pointer disruption-items">-->
+                <li class$="{{_computeClass(selectedDisruptedFlights, listItem.flightID)}} disruption-items">
                 <div class="flex flex--justify">
                   <div class="u-1/6 flex__item flex__item--middle">
-                    <input id="{{listItem.flightID}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}" on-change="_addSelectedItem"
-                    />
+                    <input id="{{listItem.flightID}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}" on-change="_addSelectedItem"/>
                   </div>
                   <div class="text u-2/6">
                     <template is="dom-if" if="{{listItem.disruption.cancel}}">
-                      <span class="title cancelled" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
+                      <span class="cancelled title" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
                     </template>
                     <template is="dom-if" if="{{listItem.disruption.delay}}">
-                      <span class$="title {{_getDelayedColor(listItem.disruption.delay.departureDelayMinutes)}}" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
+                      <span class$="{{_getDelayedColor(listItem.disruption.delay.departureDelayMinutes)}} title" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
                     </template>
                     <br/>
                     <span class="subtitle">{{listItem.flightDetails.bestAvailDeptTimeStr }}</span>
@@ -172,7 +172,6 @@ Custom property | Description | Default
         value: false,
         notify: true
       },
-
       isSolveEnabled: {
         type: Boolean,
         value: false,
@@ -191,7 +190,27 @@ Custom property | Description | Default
           return [];
         },
         notify: true
+      },
+
+      justGotSolved: {
+        type: Boolean,
+        value: false,
+        notify: true
       }
+    },
+
+    _computeClass: function(selectedDisruptedFlights, id) {
+        if (selectedDisruptedFlights != null && selectedDisruptedFlights.length > 0) {
+          for (var i = 0; i < selectedDisruptedFlights.length; i++) {
+            var selectedDisruptedFlight = selectedDisruptedFlights[i];
+            if (selectedDisruptedFlight.flightID == id) {
+              return "list-ui__item pointer selected";
+            }
+          }
+        }
+
+        return 'list-ui__item pointer';
+
     },
 
     _formatImpacted: function (businessCompartmentPax, coachCompartmentPax) {
@@ -251,6 +270,10 @@ Custom property | Description | Default
     },
 
     _addSelectedItem: function (evt) {
+      // if (this.justGotSolved) {
+      //   this.justGotSolved = false;
+      // }
+
       var index = this.selectedItems.indexOf(evt.currentTarget.id);
       if (evt.currentTarget.checked) {
         this.push("selectedItems", evt.currentTarget.id);
@@ -276,11 +299,16 @@ Custom property | Description | Default
     },
 
     _selectAll: function (evt) {
+      // if (this.justGotSolved) {
+      //   this.justGotSolved = false;
+      // }
+
       this.isSelectedAll = !this.isSelectedAll;
       if (this.listItems != null && this.listItems.length > 0) {
         for (var i = 0; i < this.listItems.length; i++) {
           this.listItems[i].checked = this.isSelectedAll;
-          this._updateItem(this.listItems[i], i);
+          this.notifyPath('listItems.' + i + '.checked', this.listItems[i].checked);
+          // this._updateItem(this.listItems[i], i);
           var flightId = this.listItems[i].flightID;
           if (this.isSelectedAll && (this.selectedItems.indexOf(flightId) == -1)) {
             this.push("selectedItems", flightId);
@@ -324,6 +352,17 @@ Custom property | Description | Default
       } else {
         return 'fa-arrow-circle-up';
       }
+    },
+
+    _clearSelectedItems: function (id) {
+      this.selectedItems = [];
+      for (var i = 0; i < this.listItems.length; i++) {
+        var listItem = this.listItems[i];
+        if (listItem.flightID != id) {
+          this.notifyPath('listItems.' + i + '.checked', false);
+        }
+      }
+      this.isSelectedAll = false;
     }
   });
 
