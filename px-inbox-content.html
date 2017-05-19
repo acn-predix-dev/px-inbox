@@ -12,9 +12,8 @@
 <link rel="import" href="../px-table-view/px-table-view.html" />
 <link rel="import" href="../px-vis-pie-chart/px-vis-pie-chart.html" />
 <link rel="import" href="../px-modal/px-modal.html" />
-
+<link rel="import" href="../impetus-scroller/impetus-scroller.html" />
 <!--
-
 ##### Usage
 
     <px-inbox height="100vh" list-items='[{"id":"1","title":"GT Vibration","subtitle":"Block 2","severity":"important","date":"2016-10-05T01:29"}]'>
@@ -46,22 +45,56 @@ Custom property | Description | Default
 <dom-module id="px-inbox-content">
   <template>
     <style include="px-inbox-styles"></style>
-    <div class="flex flex--col">
-      <div id="flights-pane" class="flex flex--justify">
-        <div class="flex flex--left">
+    <div class="flex__item">
+      <div id="flights-pane" class="flex flex--row">
+        <div id="div-flights" class="flex flex__item flex__item--middle">
+          <impetus-scroller style="height:88px">
           <template is="dom-repeat" items="{{displayItems}}" as="displayItem">
-            <div>{{displayItem.flightID}}</div>
-            <br>
-        </template>
+            <div class="flex disruption-item">
+              <div class="text u-3/6">   
+                <template is="dom-if" if="{{displayItem.disruption.cancel}}">
+                  <span class="title cancelled" style="text-transform: uppercase">{{displayItem.tenant}} {{displayItem.flightDetails.flightNumber}}</span>
+                </template>
+                <template is="dom-if" if="{{displayItem.disruption.delay}}">
+                  <span class$="title {{_getDelayedColor(displayItem.disruption.delay.departureDelayMinutes)}}" style="text-transform: uppercase">{{displayItem.tenant}} {{displayItem.flightDetails.flightNumber}}</span>
+                </template>
+                <br/>
+                <span>{{_formatStation(displayItem.flightDetails.origin)}} - {{_formatStation(displayItem.flightDetails.destination)}}</span>
+                <br/>
+                <span>STD {{_formatDateTime(displayItem.flightDetails.departureTimeSch, 'MM:DD/YY')}}</span>
+                <br/>
+                <span>STA {{_formatDateTime(displayItem.flightDetails.arrivalTimeSch, 'MM:DD/YY')}}</span>
+              </div>
+              <div class="text u-3/6">
+                <span class="subtitle">PAX {{_formatImpacted(displayItem.flightDetails.businessCompartmentPax, displayItem.flightDetails.coachCompartmentPax)}}</span>
+                <br/>
+                <template is="dom-if" if="{{displayItem.disruption.cancel}}">
+                  <span>Cancelled</span>
+                </template>
+                <template is="dom-if" if="{{displayItem.disruption.delay}}">
+                  <span>Delay {{_getDuration(displayItem.disruption.delay.departureDelayMinutes)}}</span>
+                </template>
+                <br/>
+                <span>ETD {{_formatDateTime(displayItem.flightDetails.departureTimeEst, 'MM:DD/YY')}}</span>
+                <br/>
+                <span>ETA {{_formatDateTime(displayItem.flightDetails.arrivalTimeEst, 'MM:DD/YY')}}</span>
+              </div>
+            </div>
+          </template>
+          </impetus-scroller>
         </div>
-        <div id="div-donut" class="flex flex--right">
-          <px-vis-pie-chart prevent-resize="true" width="100" height="100" inner-radius=".7" chart-horizontal-alignment="right" chart-vertical-alignment="center"
-            margin='{"top":"10","bottom":"10","left":"0","right":"0"}' register-config='{"type":"vertical","width":0}' chart-data='[
+        <div id="div-donut" class="flex__item flex__item--middle">
+          <px-vis-pie-chart prevent-resize="true" width="100" height="100" inner-radius=".7" 
+            chart-horizontal-alignment="right" chart-vertical-alignment="center"
+            margin='{"top":"10","bottom":"10","left":"0","right":"0"}' 
+            register-config='{"type":"vertical","width":0}' 
+            chart-data='[
                   {"x":1,"y":"Terminating","colorIndex":0,"backgroundColor":"rgb(93,165,218)"},
                   {"x":1,"y":"Connecting","colorIndex":5,"backgroundColor":"rgb(178,118,178)"},
                   {"x":1,"y":"Misconnecting","colorIndex":2,"backgroundColor":"rgb(96,189,104)"}
-                ]' series-config='{"mySerie":{"y":"y","x":"x"}}' donut="true" show-title="true" title="J8 Y80" title-spacing="5"
-            use-percentage="false">
+                ]' 
+            series-config='{"mySerie":{"y":"y","x":"x"}}' donut="true" show-title="true" title="J8 Y80" 
+            title-spacing="5" use-percentage="false">
           </px-vis-pie-chart>
         </div>
       </div>
@@ -421,6 +454,59 @@ Custom property | Description | Default
         this.notifyPath('listItems.' + i + '.checked', false);
       }
       this.isSelectedAll = false;
+    },
+
+    ready: function() {
+      // console.log(this.displayItems);
+    },
+
+    attached: function(){
+      if (document.getElementById('div-flights').addEventListener) {
+        // IE9, Chrome, Safari, Opera
+        document.getElementById('div-flights').addEventListener("mousewheel", this.scrollHorizontally, false);
+        // Firefox
+        document.getElementById('div-flights').addEventListener("DOMMouseScroll", this.scrollHorizontally, false);
+      } else {
+        // IE 6/7/8
+        document.getElementById('div-flights').attachEvent("onmousewheel", this.scrollHorizontally);
+      }
+    },
+
+    scrollHorizontally: function(e) {
+        e = window.event || e;
+        var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+        document.getElementById('div-flights').scrollLeft -= (delta*40); // Multiplied by 40
+        e.preventDefault();
+    },
+
+    _formatStation: function (station) {
+      return station.substr(3, 7);
+    },
+
+    _getDuration: function (minutes) {
+      return moment.duration(minutes, "minutes").format("hh:mm", { trim: false });
+    },
+
+    _getDelayedColor: function (departureDelayMinutes) {
+      if (departureDelayMinutes > 15 && departureDelayMinutes < 180) {
+        return "delayed-15";
+      } else if (departureDelayMinutes >= 180) {
+        return "delayed-3"
+      }
+    },
+
+    _formatImpacted: function (businessCompartmentPax, coachCompartmentPax) {
+      var impactedString = '';
+
+      if (businessCompartmentPax != null) {
+        impactedString += "J" + businessCompartmentPax;
+      }
+
+      if (coachCompartmentPax != null) {
+        impactedString += "Y" + coachCompartmentPax;
+      }
+
+      return impactedString;
     }
 
   });
