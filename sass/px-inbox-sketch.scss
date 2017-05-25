@@ -99,6 +99,7 @@ px-dropdown {
   margin-top: -2px;
 }
 
+#solution-window,
 .detail {
   overflow-y: overlay;
 }
@@ -211,14 +212,14 @@ $inuit-enable-margins--small: true;
 /*START-CHANGES*/
 //display: inline-block;
 #flights-pane {
-  background-color: #EFF3F6;
+  border-bottom: 1px solid #d9e1e6;
   height: 100px;
-  padding: .66667rem;  
+  max-height: 100px;
+  background-color: #fafafa;
 }
 
 #solution-window {
   height: calc(100vh - 200px);
-  overflow-y: overlay;
 }
 
 #list {
@@ -239,11 +240,11 @@ $inuit-enable-margins--small: true;
 }
 
 .solution-item-pnr {
-  width: 20%;
+  width: 15%;
 }
 
 .solution-item-itinerary {
-  width: 40%;
+  width: 45%;
 }
 
 .solution-item-commit {
@@ -258,11 +259,11 @@ $inuit-enable-margins--small: true;
   width: 5%;
 }
 
-.terminating {
+.connecting {
   color: #b277b1;
 }
 
-.connecting {
+.terminating {
   color: #5fa5d8;
 }
 
@@ -345,5 +346,66 @@ $inuit-enable-margins--small: true;
 
 :host ::content #div-donut {
     width: 300px;
+    max-width: 300px;
 }
+
+:host ::content #div-flights {
+    position: relative;
+    overflow: hidden;
+    width: 100%
+}
+
+:host ::content impetus-scroller {
+  display: initial;
+  position: initial;
+  overflow: visible;
+  contain: style;
+  height: 75px;
+  width: 100%
+}
+
+:host ::content #container.impetus-scroller {
+  width: 100%
+}
+
+:host ::content .disruption-item {
+  width: 70px;
+  min-width: 70px;
+  border-right: 1px solid #eff3f5;
+  font-size: 10px;
+  padding: 7px;
+  color: #748b99;
+  height: 60px;
+  text-align: center
+}
+
+.pnr-carrier {
+    padding-right: 5px;
+    width: 6%;
+}
+
+.pnr-flight-number {
+    padding-right: 5px;
+    width: 10%;
+}
+
+.pnr-orig-dest {
+    padding-right: 5px;
+    width: 20%;
+}
+
+.pnr-times {
+    padding-right: 5px;
+    width: 30%;
+}
+
+.pnr-arrival-delay {
+    padding-right: 5px;
+    width: 15%;
+}
+
+.committed {
+  color: #0a9ec1;
+}
+
 

@@ -74,10 +74,9 @@ Custom property | Description | Default
             </div>
           </div>
         </div>
-        <div class="disruption-scrollable">
+        <div id="disruption-scrollable" class="disruption-scrollable">
           <ul class="list-ui list-ui--small">
             <template is="dom-repeat" items="{{listItems}}" as="listItem">
-              <!--<li class="list-ui__item pointer disruption-items">-->
                 <li class$="{{_computeClass(selectedDisruptedFlights, listItem.flightID)}} disruption-items">
                 <div class="flex flex--justify">
                   <div class="u-1/6 flex__item flex__item--middle">
@@ -172,6 +171,7 @@ Custom property | Description | Default
         value: false,
         notify: true
       },
+
       isSolveEnabled: {
         type: Boolean,
         value: false,
@@ -204,13 +204,12 @@ Custom property | Description | Default
           for (var i = 0; i < selectedDisruptedFlights.length; i++) {
             var selectedDisruptedFlight = selectedDisruptedFlights[i];
             if (selectedDisruptedFlight.flightID == id) {
-              return "list-ui__item pointer selected";
+              return "list-ui__item selected";
             }
           }
         }
 
-        return 'list-ui__item pointer';
-
+        return 'list-ui__item';
     },
 
     _formatImpacted: function (businessCompartmentPax, coachCompartmentPax) {

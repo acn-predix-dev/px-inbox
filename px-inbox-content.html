@@ -11,10 +11,9 @@
 <script src="../moment-duration-format/lib/moment-duration-format.js"></script>
 <link rel="import" href="../px-table-view/px-table-view.html" />
 <link rel="import" href="../px-vis-pie-chart/px-vis-pie-chart.html" />
-<link rel="import" href="../px-modal/px-modal.html" />
-
+<link rel="import" href="../px-modal/px-modal.html"/>
+<link rel="import" href="../impetus-scroller/impetus-scroller.html" />
 <!--
-
 ##### Usage
 
     <px-inbox height="100vh" list-items='[{"id":"1","title":"GT Vibration","subtitle":"Block 2","severity":"important","date":"2016-10-05T01:29"}]'>
@@ -46,15 +45,34 @@ Custom property | Description | Default
 <dom-module id="px-inbox-content">
   <template>
     <style include="px-inbox-styles"></style>
-    <div class="flex flex--col">
-      <div id="flights-pane" class="flex flex--justify">
-        <div class="flex flex--left">
-          <!--<template is="dom-repeat" items="{{displayItems}}" as="displayItem">
-            <div>{{displayItem.flightID}}</div>
-            <br>
-          </template>-->
+    <div class="flex__item">
+      <div id="flights-pane" class="flex flex--row">
+        <div id="div-flights" class="flex flex__item flex__item--middle">
+          <impetus-scroller style="height:75px">
+            <template is="dom-repeat" items="{{displayItems}}" as="displayItem">
+              <div class="flex disruption-item">
+                <div class="text u-1/1">
+                  <template is="dom-if" if="{{displayItem.disruption.cancel}}">
+                    <span class="title cancelled" style="text-transform: uppercase">{{displayItem.tenant}} {{displayItem.flightDetails.flightNumber}}</span>
+                  </template>
+                  <template is="dom-if" if="{{displayItem.disruption.delay}}">
+                    <span class$="title {{_getDelayedColor(displayItem.disruption.delay.departureDelayMinutes)}}" style="text-transform: uppercase">{{displayItem.tenant}} {{displayItem.flightDetails.flightNumber}}</span>
+                  </template>
+                  <br/>
+                  <span>{{_formatStation(displayItem.flightDetails.origin)}} - {{_formatStation(displayItem.flightDetails.destination)}}</span>
+                  <br/>
+                  <template is="dom-if" if="{{displayItem.disruption.cancel}}">
+                    <span>Cancelled</span>
+                  </template>
+                  <template is="dom-if" if="{{displayItem.disruption.delay}}">
+                    <span>Delay {{_getDuration(displayItem.disruption.delay.departureDelayMinutes)}}</span>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </impetus-scroller>
         </div>
-        <div id="div-donut" class="flex flex--right">
+        <div id="div-donut" class="flex__item flex__item--middle">
           <px-vis-pie-chart prevent-resize="true" width="100" height="100" inner-radius=".7" chart-horizontal-alignment="right" chart-vertical-alignment="center"
             margin='{"top":"10","bottom":"10","left":"0","right":"0"}' register-config='{"type":"vertical","width":0}' chart-data='[
                   {"x":1,"y":"Terminating","colorIndex":0,"backgroundColor":"rgb(93,165,218)"},
@@ -91,7 +109,7 @@ Custom property | Description | Default
       <div id="solution-window">
         <ul class="list-ui list-ui--huge">
           <template is="dom-repeat" items="{{listItems}}" as="listItem">
-            <li class="list-ui__item pointer">
+            <li class="list-ui__item">
               <div class="flex flex--justify">
                 <div class="solution-item-row solution-item-checkbox flex__item--top">
                   <input id="{{listItem.confirmationNumber}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}"
@@ -100,7 +118,7 @@ Custom property | Description | Default
                 <div class="text solution-item-row solution-item-pnr flex__item--top">
                   <span class="title" style="text-transform: uppercase">{{ listItem.confirmationNumber }}</span>
                   <br/>
-                  <span class="subtitle">Lateness +{{ _computeLateness(listItem)}}</span>
+                  <span class="subtitle">Lateness {{ _computeLateness(listItem)}}</span>
                   <br/>
                   <span class="subtitle">PAX: {{ _getPaxCount(listItem) }} </span><span class="subtitle">SSR: {{ _hasSSR(listItem)}} </span>
                   <span class="subtitle">FF: {{ _getPrimaryFrequentFlyer(listItem) }}</span>
@@ -112,8 +130,14 @@ Custom property | Description | Default
                     </div>
                     <div class="u-5/6">
                       <template is="dom-repeat" items="{{_getFlights(listItem)}}" as="flight">
-                        <span class="subtitle">{{ flight.operatingCarrier }} {{ flight.flightNumber }} {{ flight.origin }}-{{ flight.destination }} [{{ _formatDateTime(flight.departureTime, 'HH:mm') }}-{{ _formatDateTime(flight.arrivalTime, 'HH:mm') }}]</span>
-                        <br>
+                        <div class="subtitle flex flex__item">
+                          <div class="pnr-carrier">{{ flight.operatingCarrier }}</div>
+                          <div class="pnr-flight-number">{{ flight.flightNumber }}</div>
+                          <div class="pnr-orig-dest">{{ flight.origin }} - {{ flight.destination }}</div>
+                          <div class="pnr-times">[{{ _formatDateTime(flight.departureTime, 'HH:mm/DD') }} - {{ _formatDateTime(flight.arrivalTime,
+                            'HH:mm/DD') }}]</div>
+                          <div class="pnr-arrival-delay">{{ _computeArrivalDelay(flight,index) }}</div>
+                        </div>
                       </template>
                     </div>
                   </div>
@@ -125,29 +149,36 @@ Custom property | Description | Default
                     <div class="u-5/6">
                       <template is="dom-if" if="{{_isReflowFlightsVisible(listItem.reflowStatus)}}">
                         <template is="dom-repeat" items="{{ _getReflowFlights(listItem)}}" as="reflowFlight">
-                          <span class="title">{{ reflowFlight.operatingCarrier }} {{ reflowFlight.flightNumber }} {{ reflowFlight.origin }}-{{ reflowFlight.destination }} [{{ _formatDateTime(reflowFlight.departureTime, 'HH:mm')}}-{{ _formatDateTime(reflowFlight.arrivalTime, 'HH:mm')}}]</span>
-                          <br>
+                          <div class$="{{_getReflowFlightsColor(listItem.reflowStatus)}} flex flex__item">
+                            <div class="pnr-carrier">{{ reflowFlight.operatingCarrier }}</div>
+                            <div class="pnr-flight-number">{{ reflowFlight.flightNumber }}</div>
+                            <div class="pnr-orig-dest">{{ reflowFlight.origin }} - {{ reflowFlight.destination }}</div>
+                            <div class="pnr-times">[{{ _formatDateTime(reflowFlight.departureTime, 'HH:mm/DD')}} - {{ _formatDateTime(reflowFlight.arrivalTime,
+                              'HH:mm/DD')}}]</div>
+                          </div>
                         </template>
                       </template>
                       <template is="dom-if" if="{{_isReflowNACP(listItem.reflowStatus)}}">
-                        <span class="title">No available seat found.</span>
+                        <span>No available seat found.</span>
                       </template>
                       <template is="dom-if" if="{{_isReflowNARUL(listItem.reflowStatus)}}">
-                        <span class="title">Rule Violation.</span>
+                        <span>Rule Violation.</span>
                       </template>
                     </div>
                   </div>
                 </div>
                 <div class="text solution-item-row solution-item-commit flex__item--top">
-                  <span><button class$="btn {{_getCommitBtnClass(listItem.reflowStatus)}}">Commit</button></span>
-                  <br/>
+                  <span>
+                    <button id="{{listItem.confirmationNumber}}" class$="btn {{_getCommitBtnClass(listItem.reflowStatus)}}" on-click="_commitSingle">Commit</button>
+                  </span>
+                  <br>
+                  <br>
                   <template is="dom-if" if="{{_isReflowAvailableOAT(listItem)}}">
-                    <px-dropdown display-value="{{listItem.reflowStatus}}" value="{{listItem.reflowStatus}}">
+                    <px-dropdown id="{{listItem.confirmationNumber}}" display-value="{{listItem.reflowStatus}}" value="{{listItem.reflowStatus}}">
                       <px-dropdown-content extend-dropdown='true' extend-dropdown-by='25' max-cont-character-width='10' items='[ {"key":"1","val":"Rebooked - OAT"},{"key":"2","val":"Rebooked - Other"}]'>
                       </px-dropdown-content>
                     </px-dropdown>
                   </template>
-
                   <template is="dom-if" if="{{!_isReflowAvailableOAT(listItem)}}">
                     <span class="subtitle">{{ listItem.reflowStatus }}</span>
                   </template>
@@ -155,7 +186,8 @@ Custom property | Description | Default
                 </div>
                 <div class="text solution-item-row solution-item-notify flex__item--top">
                   <span><button id="{{listItem.confirmationNumber}}" class$="btn {{_getNotifyBtnClass(listItem.notificationStatus, listItem.reflowStatus)}}" on-click="_notifySingle">Notify</button></span>
-                  <br/>
+                  <br>
+                  <br>
                   <template is="dom-if" if="{{_isNotInterrupted(listItem.notificationStatus)}}">
                     <span class="subtitle">{{ listItem.notificationStatus }}</span>
                   </template>
@@ -232,21 +264,13 @@ Custom property | Description | Default
       }
     },
 
-    // listeners: {
-    //   'px-dropdown-value-changed': 'dpChanged'
-    // },
+    listeners: {
+      'px-dropdown-value-changed': 'dpChanged'
+    },
 
-    // dpChanged: function () {
-    //   console.log("Value Changed " + this.selectedValue);
-
-    //   if (this.selectedValue === "Rebooked-OAT") {
-    //     console.log("Value Changed again to enable  " + this.selectedValue);
-    //     this.disable = false;
-    //   } else if (this.selectedValue === "Rebooked-Other") {
-    //     console.log("Value Changed again to disable  " + this.selectedValue);
-    //     this.disable = true;
-    //   }
-    // },
+    dpChanged: function (evt) {
+      this.fire('updateOption', { reflowOption: evt.detail.val, confirmationNum: evt.path[2].id });
+    },
 
     _addSelectedItem: function (evt) {
       this._getSelectedItem(evt.currentTarget.id, evt.currentTarget.checked);
@@ -316,12 +340,25 @@ Custom property | Description | Default
       return this._getBtnClass(true);
     },
 
+    _isCommitted: function (reflowStatus) {
+      if (reflowStatus == 'Rebooked') {
+        return this._getBtnClass(false);
+      }
+      return this._getBtnClass(true);
+    },
+
     _getCommitBtnClass: function (reflowStatus) {
       if (reflowStatus == 'Available' || reflowStatus == 'Failed - CP' || reflowStatus == 'Failed - NET/CXN') {
+        if (reflowStatus == 'Rebooked') {
+          return this._getBtnClass(false);
+        }
         return this._getBtnClass(true);
       } else {
         return this._getBtnClass(false);
       }
+
+      // let option = this.selectedValue;
+      // this.fire('updateOption', { reflowOption: option, confirmationNum: evt.currentTarget.id });
     },
 
     _getNotifyBtnClass: function (notificationStatus, reflowStatus) {
@@ -356,11 +393,28 @@ Custom property | Description | Default
     },
 
     _computeLateness: function (listItem) {
-      return listItem.getLateness();
+      return listItem.getLateness(listItem.reflowStatus);
+    },
+
+    _computeArrivalDelay: function (flight, index) {
+      let arrivalDelay = flight.getArrivalDelay();
+      // console.log('this.arrivalDelay ' + arrivalDelay + ' | index ' + index);
+      if (arrivalDelay === 'Cancelled') {
+        if (index === 0) {
+          return '(' + arrivalDelay + ')';
+        }
+      } else if (arrivalDelay === '+00:00') {
+        return null;
+      } else {
+        return '(' + arrivalDelay + ')';
+      }
     },
 
     _getRouteCategoryClass: function (routeCategory) {
-      return routeCategory.toLowerCase();
+      if (routeCategory != null && routeCategory != '') {
+        return routeCategory.toLowerCase();
+      }
+      return '';
     },
 
     _getReflowFlights: function (listItem) {
@@ -391,7 +445,31 @@ Custom property | Description | Default
       return listItem.reflowStatus == "Available – OAT";
     },
 
+    _commitSingle: function (evt) {
+      this._getSelectedItem(evt.currentTarget.id, true);
+      this._commit();
+    },
+
+    _commit: function () {
+      var pnrsToCommit = [];
+      for (var i = 0; i < this.listItems.length; i++) {
+        var listItem = this.listItems[i];
+        for (var j = 0; j < this.selectedItems.length; j++) {
+          if (listItem.confirmationNumber == this.selectedItems[j] && (listItem.reflowStatus == 'Available' || listItem.reflowStatus == 'Failed - CP' || listItem.reflowStatus == 'Failed - NET/CXN') && listItem.reflowStatus != 'Rebooked') {
+            pnrsToCommit.push(this.selectedItems[j]);
+          };
+        }
+      }
+
+      if (pnrsToCommit.length > 0) {
+        this.fire('commit', { selectedPNRs: pnrsToCommit });
+      }
+
+      this._clearSelectedItems();
+    },
+
     _notifySingle: function (evt) {
+      this.notifyPath("selectedItems", []);
       this._getSelectedItem(evt.currentTarget.id, true);
       this._notify();
     },
@@ -425,8 +503,68 @@ Custom property | Description | Default
       this.isSelectedAll = false;
     },
 
-    _isNotInterrupted(notificationStatus) {
+    ready: function () {
+      // console.log(this.displayItems);
+    },
+
+    attached: function () {
+      if (document.getElementById('div-flights').addEventListener) {
+        // IE9, Chrome, Safari, Opera
+        document.getElementById('div-flights').addEventListener("mousewheel", this.scrollHorizontally, false);
+        // Firefox
+        document.getElementById('div-flights').addEventListener("DOMMouseScroll", this.scrollHorizontally, false);
+      } else {
+        // IE 6/7/8
+        document.getElementById('div-flights').attachEvent("onmousewheel", this.scrollHorizontally);
+      }
+    },
+
+    scrollHorizontally: function (e) {
+      e = window.event || e;
+      var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+      document.getElementById('div-flights').scrollLeft -= (delta * 40); // Multiplied by 40
+      e.preventDefault();
+    },
+
+    _formatStation: function (station) {
+      return station.substr(3, 7);
+    },
+
+    _getDuration: function (minutes) {
+      return moment.duration(minutes, "minutes").format("hh:mm", { trim: false });
+    },
+
+    _getDelayedColor: function (departureDelayMinutes) {
+      if (departureDelayMinutes > 15 && departureDelayMinutes < 180) {
+        return "delayed-15";
+      } else if (departureDelayMinutes >= 180) {
+        return "delayed-3"
+      }
+    },
+
+    _formatImpacted: function (businessCompartmentPax, coachCompartmentPax) {
+      var impactedString = '';
+
+      if (businessCompartmentPax != null) {
+        impactedString += "J" + businessCompartmentPax;
+      }
+
+      if (coachCompartmentPax != null) {
+        impactedString += "Y" + coachCompartmentPax;
+      }
+
+      return impactedString;
+    },
+
+    _isNotInterrupted: function (notificationStatus) {
       return notificationStatus != 'N/I';
+    },
+
+    _getReflowFlightsColor: function (reflowStatus) {
+      if (reflowStatus == 'Rebooked' || reflowStatus == 'Rebooked - OAT' || reflowStatus == 'Rebooked - Other') {
+        return 'committed';
+      }
+      return '';
     }
 
   });
