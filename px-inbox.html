@@ -3,14 +3,14 @@
     siblings. When this component is run from its own repo (e.g. tests, examples), we assume the server is started with
     'gulp serve' (or similar server setup) to enable correct finding of bower dependencies for local runs.
 -->
-<link rel="import" href="../polymer/polymer.html"/>
-<link rel="import" href="css/px-inbox-styles.html">
+<link rel="import" href="../polymer/polymer.html" />
 <link rel="import" href="../px-dropdown/px-dropdown.html" />
-<link rel="import" href="../px-simple-bar-chart/px-simple-bar-chart.html" />
+<link rel="import" href="px-inbox-content.html" />
+<link rel="import" href="css/px-inbox-styles.html">
+
 <script src="../moment/moment.js"></script>
-<script src="../lodash/lodash.js"></script>
 <script src="../moment-duration-format/lib/moment-duration-format.js"></script>
-<link rel="import" href="px-inbox-content.html"/>
+
 <!--
 
 ##### Usage
@@ -45,26 +45,21 @@ Custom property | Description | Default
   <template>
     <style include="px-inbox-styles"></style>
     <div id="container" class="container flex">
-      <div id="list" class="list u-1/6-desk u-1/4-lap">
-        <div class="flex flex--justify" style="height: 5vh; padding: .66667rem;">
+      <div id="list" class="list">
+        <div class="flex flex--justify disruption-header">
           <div class="flex flex--left">
             <span class="subtitle" style="color: #8c8c8d; padding-right: 10px">Sort by:</span>
-            <template is="dom-if" if="{{!isReverse}}">
-              <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class="fa fa-arrow-circle-up" aria-hidden="true"></i></span>
-            </template>
-            <template is="dom-if" if="{{isReverse}}">
-              <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
-            </template>
+            <span class="subtitle actionable" style="color: #129ec2; padding-right: 5px" on-click="_sort"><i class$="fa {{_getSortOrder(isReverse)}}" aria-hidden="true"></i></span>
             <span class="subtitle" style="color:#129ec2">Departure Time</span>
           </div>
           <div class="flex flex--right">
-            <span class="fa-stack fa-md">
-              <i class="fa fa-circle-o fa-stack-2x" style="font-size: 1.7rem;"></i>
-              <i class="fa fa-filter fa-stack-1x" style="font-size: 0.8rem; bottom:7;"></i>
+            <span class="fa-stack" style="margin-top: -5px;">
+              <i class="fa fa-circle-o fa-stack-2x"></i>
+              <i class="fa fa-filter fa-stack-1x"></i>
             </span>
           </div>
         </div>
-        <div class="flex flex--justify" style="height: 5vh; padding: .66667rem; border-bottom: 1px solid #b6c3cc;">
+        <div class="flex flex--justify disruption-header border-bottom">
           <div class="flex flex--left">
             <div class="disrupted-flight-row flex__item flex__item--bottom">
               <input class="px-inbox-checkbox" type="checkbox" checked="{{isSelectedAll::change}}" on-change="_selectAll" />
@@ -79,20 +74,20 @@ Custom property | Description | Default
             </div>
           </div>
         </div>
-        <div class="disruption-scrollable">
+        <div id="disruption-scrollable" class="disruption-scrollable">
           <ul class="list-ui list-ui--small">
             <template is="dom-repeat" items="{{listItems}}" as="listItem">
-              <li class="list-ui__item pointer disruption-items">
+                <li class$="{{_computeClass(selectedDisruptedFlights, listItem.flightID)}} disruption-items">
                 <div class="flex flex--justify">
                   <div class="u-1/6 flex__item flex__item--middle">
-                    <input id="{{listItem.flightID}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}" on-change="_addSelectedItem" />
+                    <input id="{{listItem.flightID}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}" on-change="_addSelectedItem"/>
                   </div>
                   <div class="text u-2/6">
                     <template is="dom-if" if="{{listItem.disruption.cancel}}">
-                      <span class="title cancelled" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
+                      <span class="cancelled title" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
                     </template>
                     <template is="dom-if" if="{{listItem.disruption.delay}}">
-                      <span class$="title {{_getDelayedColor(listItem.disruption.delay.departureDelayMinutes)}}" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
+                      <span class$="{{_getDelayedColor(listItem.disruption.delay.departureDelayMinutes)}} title" style="text-transform: uppercase">{{listItem.tenant}} {{listItem.flightDetails.flightNumber}}</span>
                     </template>
                     <br/>
                     <span class="subtitle">{{listItem.flightDetails.bestAvailDeptTimeStr }}</span>
@@ -117,9 +112,9 @@ Custom property | Description | Default
           </ul>
         </div>
       </div>
-      <div id="detail" class="detail u-5/6-desk u-3/4-lap">
-        <template is="dom-if" if="{{hasSolutions}}">
-          <px-inbox-content list-items="{{solutionItems}}" selected-items="{{selectedDisruptedFlights}}"></px-inbox-content>
+      <div id="detail" class="detail">
+        <template is="dom-if" if="{{_hasSolutions(contentItems)}}">
+          <px-inbox-content list-items="{{contentItems}}" display-items="{{selectedDisruptedFlights}}"></px-inbox-content>
         </template>
       </div>
     </div>
@@ -158,15 +153,14 @@ Custom property | Description | Default
         notify: true
       },
 
-      solutionItems: {
+      contentItems: {
         type: Array,
-        observer: '_changeHasSolutions',
         notify: true
       },
 
       selectedItems: {
         type: Array,
-        value: function() {
+        value: function () {
           return [];
         },
         notify: true
@@ -190,54 +184,39 @@ Custom property | Description | Default
         notify: true
       },
 
-      hasSolutions: {
-        type: Boolean,
-        value: false,
-        notify: true
-      },
-
       selectedDisruptedFlights: {
         type: Array,
-        value: function() {
+        value: function () {
           return [];
         },
         notify: true
-      }
-    },
-    /**
-    * Searches through the list titles and subtitles and filters based on the query.
-    * @method _computeFilter
-    */
-    _computeFilter: function(query) {
-      // clear all selections
-      var otherItems = Polymer.dom(this.root).querySelectorAll('.selected');
+      },
 
-      for (var i=0; i<otherItems.length; i++) {
-        otherItems[i].classList.remove("selected");
-      }
-
-      this.selectedItem = "";
-
-      if (!query) {
-        // set filter to null to disable filtering
-        return null;
-      } else {
-        // return a filter function for the current search query
-        query = query.toLowerCase();
-        return function(listItem) {
-          var title = listItem.title.toLowerCase();
-          var subtitle = listItem.subtitle.toLowerCase();
-          return (title.indexOf(query) != -1 ||
-              subtitle.indexOf(query) != -1);
-        };
+      justGotSolved: {
+        type: Boolean,
+        value: false,
+        notify: true
       }
     },
 
-    _formatImpacted: function(businessCompartmentPax, coachCompartmentPax) {
+    _computeClass: function(selectedDisruptedFlights, id) {
+        if (selectedDisruptedFlights != null && selectedDisruptedFlights.length > 0) {
+          for (var i = 0; i < selectedDisruptedFlights.length; i++) {
+            var selectedDisruptedFlight = selectedDisruptedFlights[i];
+            if (selectedDisruptedFlight.flightID == id) {
+              return "list-ui__item selected";
+            }
+          }
+        }
+
+        return 'list-ui__item';
+    },
+
+    _formatImpacted: function (businessCompartmentPax, coachCompartmentPax) {
       var impactedString = '';
 
       if (businessCompartmentPax != null) {
-          impactedString += "J" + businessCompartmentPax;
+        impactedString += "J" + businessCompartmentPax;
       }
 
       if (coachCompartmentPax != null) {
@@ -247,7 +226,7 @@ Custom property | Description | Default
       return impactedString;
     },
 
-    _formatMisconnects: function(businessClassCount, coachClassCount) {
+    _formatMisconnects: function (businessClassCount, coachClassCount) {
       var misconnects = '';
 
       if (businessClassCount != null) {
@@ -261,49 +240,43 @@ Custom property | Description | Default
       return misconnects;
     },
 
-    _getDuration: function(minutes) {
+    _getDuration: function (minutes) {
       return moment.duration(minutes, "minutes").format("hh:mm", { trim: false });
     },
 
-    _formatStation: function(station) {
+    _formatStation: function (station) {
       return station.substr(3, 7);
     },
 
-    _isValidDate: function(date) {
-      var minDate = moment.utc("0001-01-01");
-      return moment.utc(date).isAfter(minDate);
-    },
-
-    _getDelayedColor: function(departureDelayMinutes) {
-        if (departureDelayMinutes > 15 && departureDelayMinutes < 180) {
-          return "delayed-15";
-        } else if (departureDelayMinutes >= 180) {
-          return "delayed-3"
-        }
-    },
-    _sort: function() {
-      if (this.listItems != null && this.listItems.length > 0) {
-        this._toggleSort();
-        this.listItems = this.listItems.reverse()
-        this.listItems = this.listItems.slice();
-//        this.set("listItems", this.listItems);
+    _getDelayedColor: function (departureDelayMinutes) {
+      if (departureDelayMinutes > 15 && departureDelayMinutes < 180) {
+        return "delayed-15";
+      } else if (departureDelayMinutes >= 180) {
+        return "delayed-3"
       }
     },
 
-    _getOrder: function() {
+    _sort: function () {
+      if (this.listItems != null && this.listItems.length > 0) {
+        this.isReverse = !this.isReverse;
+        this.listItems = this.listItems.reverse()
+        this.listItems = this.listItems.slice();
+      }
+    },
+
+    _getOrder: function () {
       return this.isReverse;
     },
 
-    _toggleSort: function() {
-      this.isReverse = !this.isReverse;
-    },
-
     _addSelectedItem: function (evt) {
+      // if (this.justGotSolved) {
+      //   this.justGotSolved = false;
+      // }
+
       var index = this.selectedItems.indexOf(evt.currentTarget.id);
       if (evt.currentTarget.checked) {
         this.push("selectedItems", evt.currentTarget.id);
       } else {
-
         this.splice('selectedItems', index, 1);
       }
 
@@ -314,38 +287,43 @@ Custom property | Description | Default
       } else {
         this.isSelectedAll = false;
       }
-  },
+    },
 
-  _enableSolve: function() {
-    if (this.selectedItems != null && this.selectedItems.length > 0) {
-      this.isSolveEnabled = true;
-    } else {
-      this.isSolveEnabled = false;
-    }
-  },
+    _enableSolve: function () {
+      if (this.selectedItems != null && this.selectedItems.length > 0) {
+        this.isSolveEnabled = true;
+      } else {
+        this.isSolveEnabled = false;
+      }
+    },
 
-  _selectAll: function(evt) {
-    this.isSelectedAll = !this.isSelectedAll;
-    if (this.listItems != null && this.listItems.length > 0) {
-      for (var i = 0; i < this.listItems.length; i++) {
-        this.listItems[i].checked = this.isSelectedAll;
-        this._updateItem(this.listItems[i]);
-        var flightId = this.listItems[i].flightID;
-        if (this.isSelectedAll && (this.selectedItems.indexOf(flightId) == -1)) {
-          this.push("selectedItems", flightId);
+    _selectAll: function (evt) {
+      // if (this.justGotSolved) {
+      //   this.justGotSolved = false;
+      // }
+
+      this.isSelectedAll = !this.isSelectedAll;
+      if (this.listItems != null && this.listItems.length > 0) {
+        for (var i = 0; i < this.listItems.length; i++) {
+          this.listItems[i].checked = this.isSelectedAll;
+          this.notifyPath('listItems.' + i + '.checked', this.listItems[i].checked);
+          // this._updateItem(this.listItems[i], i);
+          var flightId = this.listItems[i].flightID;
+          if (this.isSelectedAll && (this.selectedItems.indexOf(flightId) == -1)) {
+            this.push("selectedItems", flightId);
+          }
         }
+
+        if (!this.isSelectedAll) {
+          this.selectedItems = [];
+        }
+
+        this._enableSolve();
       }
+    },
 
-      if (!this.isSelectedAll) {
-        this.selectedItems = [];
-      }
-
-      this._enableSolve();
-    }
-  },
-
-    _updateItem: function(listItem) {
-      var p = 'listItems.' + this.listItems.indexOf(listItem) + '.';
+    _updateItem: function (listItem, index) {
+      var p = 'listItems.' + index + '.';
       for (var i in listItem) {
         if (listItem.hasOwnProperty(i)) {
           this.notifyPath(p + i, listItem[i]);
@@ -353,35 +331,38 @@ Custom property | Description | Default
       }
     },
 
-    _solve: function() {
-      this.fire('solve');
-      for (var i = 0; i < this.selectedItems.length > 0; i++) {
-        for (var j = 0; j < this.listItems.length; j++) {
-          if (this.selectedItems[i] == this.listItems[j].flightID) {
-            var disruptedFlight = this.listItems[j];
-            disruptedFlight.status = "solved";
-            this._updateItem(disruptedFlight);
-            this.push("selectedDisruptedFlights", disruptedFlight);
-          }
+    _solve: function () {
+      if (this.selectedItems != null && this.selectedItems.length > 0) {
+        this.fire('solve', { selectedDisruptedFlightIds: this.selectedItems });
+      }
+    },
+
+    _hasSolutions: function (contentItems) {
+      if (contentItems != null && contentItems.length > 0) {
+        return true;
+      } else {
+        return false;
+      }
+    },
+
+    _getSortOrder: function (isReverse) {
+      if (isReverse) {
+        return 'fa-arrow-circle-down';
+      } else {
+        return 'fa-arrow-circle-up';
+      }
+    },
+
+    _clearSelectedItems: function (id) {
+      this.selectedItems = [];
+      for (var i = 0; i < this.listItems.length; i++) {
+        var listItem = this.listItems[i];
+        if (listItem.flightID != id) {
+          this.notifyPath('listItems.' + i + '.checked', false);
         }
       }
-    },
-
-    _arrangeListItems: function() {
-      var tempListItems = [];
-      var keys = Object.keys(this.listItemsMap);
-      for (var i = 0; i < keys.length; i++) {
-        tempListItems.push(this.listItemsMap[keys[i]]);
-      }
-      this.set("listItems", tempListItems);
-    },
-
-    _changeHasSolutions: function() {
-      if (this.solutionItems != null && this.solutionItems.length > 0) {
-        this.hasSolutions = true;
-      } else {
-        this.hasSolutions = false;
-      }
+      this.isSelectedAll = false;
     }
-});
+  });
+
 </script>

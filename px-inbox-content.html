@@ -3,15 +3,17 @@
     siblings. When this component is run from its own repo (e.g. tests, examples), we assume the server is started with
     'gulp serve' (or similar server setup) to enable correct finding of bower dependencies for local runs.
 -->
-<link rel="import" href="../polymer/polymer.html"/>
+<link rel="import" href="../polymer/polymer.html" />
 <link rel="import" href="css/px-inbox-styles.html">
 <link rel="import" href="../px-dropdown/px-dropdown.html" />
 <script src="../moment/moment.js"></script>
 <script src="../lodash/lodash.js"></script>
 <script src="../moment-duration-format/lib/moment-duration-format.js"></script>
 <link rel="import" href="../px-table-view/px-table-view.html" />
+<link rel="import" href="../px-vis-pie-chart/px-vis-pie-chart.html" />
+<link rel="import" href="../px-modal/px-modal.html"/>
+<link rel="import" href="../impetus-scroller/impetus-scroller.html" />
 <!--
-
 ##### Usage
 
     <px-inbox height="100vh" list-items='[{"id":"1","title":"GT Vibration","subtitle":"Block 2","severity":"important","date":"2016-10-05T01:29"}]'>
@@ -43,14 +45,47 @@ Custom property | Description | Default
 <dom-module id="px-inbox-content">
   <template>
     <style include="px-inbox-styles"></style>
-    <div class="flex flex--col">
-      <div id="flights-pane" class="flex flex--justify">
-        <!--<template is="dom-repeat" items="{{selectedItems}}" as="selectedItem">
-        </template>-->
+    <div class="flex__item">
+      <div id="flights-pane" class="flex flex--row">
+        <div id="div-flights" class="flex flex__item flex__item--middle">
+          <impetus-scroller style="height:75px">
+            <template is="dom-repeat" items="{{displayItems}}" as="displayItem">
+              <div class="flex disruption-item">
+                <div class="text u-1/1">
+                  <template is="dom-if" if="{{displayItem.disruption.cancel}}">
+                    <span class="title cancelled" style="text-transform: uppercase">{{displayItem.tenant}} {{displayItem.flightDetails.flightNumber}}</span>
+                  </template>
+                  <template is="dom-if" if="{{displayItem.disruption.delay}}">
+                    <span class$="title {{_getDelayedColor(displayItem.disruption.delay.departureDelayMinutes)}}" style="text-transform: uppercase">{{displayItem.tenant}} {{displayItem.flightDetails.flightNumber}}</span>
+                  </template>
+                  <br/>
+                  <span>{{_formatStation(displayItem.flightDetails.origin)}} - {{_formatStation(displayItem.flightDetails.destination)}}</span>
+                  <br/>
+                  <template is="dom-if" if="{{displayItem.disruption.cancel}}">
+                    <span>Cancelled</span>
+                  </template>
+                  <template is="dom-if" if="{{displayItem.disruption.delay}}">
+                    <span>Delay {{_getDuration(displayItem.disruption.delay.departureDelayMinutes)}}</span>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </impetus-scroller>
+        </div>
+        <div id="div-donut" class="flex__item flex__item--middle">
+          <px-vis-pie-chart prevent-resize="true" width="100" height="100" inner-radius=".7" chart-horizontal-alignment="right" chart-vertical-alignment="center"
+            margin='{"top":"10","bottom":"10","left":"0","right":"0"}' register-config='{"type":"vertical","width":0}' chart-data='[
+                  {"x":1,"y":"Terminating","colorIndex":0,"backgroundColor":"rgb(93,165,218)"},
+                  {"x":1,"y":"Connecting","colorIndex":5,"backgroundColor":"rgb(178,118,178)"},
+                  {"x":1,"y":"Misconnecting","colorIndex":2,"backgroundColor":"rgb(96,189,104)"}
+                ]' series-config='{"mySerie":{"y":"y","x":"x"}}' donut="true" show-title="true" title="J8 Y80" title-spacing="5"
+            use-percentage="false">
+          </px-vis-pie-chart>
+        </div>
       </div>
       <div id="solution-window-header" class="flex flex--justify">
         <div class="solution-item-row solution-item-checkbox flex__item--middle">
-          <input class="px-inbox-checkbox" type="checkbox" />
+          <input class="px-inbox-checkbox" type="checkbox" checked="{{isSelectedAll::change}}" on-change="_selectAll" />
         </div>
         <div class="text solution-item-row solution-item-pnr flex__item--middle">
           <span>PNR</span>
@@ -59,32 +94,34 @@ Custom property | Description | Default
           <span>Itinerary</span>
         </div>
         <div class="text solution-item-row solution-item-commit flex__item--middle">
-          <span><button class="btn btn--tertiary">Commit All</button></span>
+          <span><button class$="btn {{_getBtnClass(isCommitAndNotifyEnabled)}}">Commit</button></span>
         </div>
         <div class="text solution-item-row solution-item-notify flex__item--middle">
-          <span><button class="btn btn--tertiary">Notify All</button></span>
+          <span><button class$="btn {{_getBtnClass(isCommitAndNotifyEnabled)}}" on-click="_notify">Notify</button></span>
         </div>
         <div class="text solution-item-row solution-item-color flex__item--middle">
-          <span class="fa-stack fa-md">
-            <i class="fa fa-circle-o fa-stack-2x" style="font-size: 1.7rem;"></i>
-            <i class="fa fa-filter fa-stack-1x" style="font-size: 0.8rem; bottom:7;"></i>
+          <span class="fa-stack" style="margin-left: -10px;">
+            <i class="fa fa-circle-o fa-stack-2x" style="left: 0;"></i>
+            <i class="fa fa-filter fa-stack-1x" style="margin-bottom:-2px;left:0;"></i>
           </span>
         </div>
       </div>
       <div id="solution-window">
         <ul class="list-ui list-ui--huge">
           <template is="dom-repeat" items="{{listItems}}" as="listItem">
-            <li class="list-ui__item pointer">
+            <li class="list-ui__item">
               <div class="flex flex--justify">
                 <div class="solution-item-row solution-item-checkbox flex__item--top">
-                  <input class="px-inbox-checkbox" type="checkbox" />
+                  <input id="{{listItem.confirmationNumber}}" class="px-inbox-checkbox" type="checkbox" checked="{{listItem.checked::change}}"
+                    on-change="_addSelectedItem" />
                 </div>
                 <div class="text solution-item-row solution-item-pnr flex__item--top">
                   <span class="title" style="text-transform: uppercase">{{ listItem.confirmationNumber }}</span>
                   <br/>
-                  <span class="subtitle">Lateness +{{ _computeLateness(listItem)}}</span>
+                  <span class="subtitle">Lateness {{ _computeLateness(listItem)}}</span>
                   <br/>
-                  <span class="subtitle">PAX: {{ _getPaxCount(listItem) }} </span><span class="subtitle">SSR: {{ _hasSSR(listItem)}} </span><span class="subtitle">FF: {{ _getPrimaryFrequentFlyer(listItem) }}</span>
+                  <span class="subtitle">PAX: {{ _getPaxCount(listItem) }} </span><span class="subtitle">SSR: {{ _hasSSR(listItem)}} </span>
+                  <span class="subtitle">FF: {{ _getPrimaryFrequentFlyer(listItem) }}</span>
                 </div>
                 <div class="text solution-item-row solution-item-itinerary flex__item--top">
                   <div class="current flex">
@@ -92,9 +129,15 @@ Custom property | Description | Default
                       <span class="subtitle">Current</span>
                     </div>
                     <div class="u-5/6">
-                      <template is="dom-repeat" items="{{ _getFlights(listItem)}}" as="flight">
-                        <span class="subtitle">{{ flight.operatingCarrier }} {{ flight.flightNumber }} {{ flight.origin }}-{{ flight.destination }} [{{ _formatDateTime(flight.departureTime, 'HH:mm') }}-{{ _formatDateTime(flight.arrivalTime, 'HH:mm') }}]</span>
-                        <br>
+                      <template is="dom-repeat" items="{{_getFlights(listItem)}}" as="flight">
+                        <div class="subtitle flex flex__item">
+                          <div class="pnr-carrier">{{ flight.operatingCarrier }}</div>
+                          <div class="pnr-flight-number">{{ flight.flightNumber }}</div>
+                          <div class="pnr-orig-dest">{{ flight.origin }} - {{ flight.destination }}</div>
+                          <div class="pnr-times">[{{ _formatDateTime(flight.departureTime, 'HH:mm/DD') }} - {{ _formatDateTime(flight.arrivalTime,
+                            'HH:mm/DD') }}]</div>
+                          <div class="pnr-arrival-delay">{{ _computeArrivalDelay(flight,index) }}</div>
+                        </div>
                       </template>
                     </div>
                   </div>
@@ -104,34 +147,54 @@ Custom property | Description | Default
                       <span class="subtitle">New</span>
                     </div>
                     <div class="u-5/6">
-                      <template is="dom-if" if="{{_isReflowAvailable(listItem)}}">
+                      <template is="dom-if" if="{{_isReflowFlightsVisible(listItem.reflowStatus)}}">
                         <template is="dom-repeat" items="{{ _getReflowFlights(listItem)}}" as="reflowFlight">
-                          <span class="title">{{ reflowFlight.operatingCarrier }} {{ reflowFlight.flightNumber }} {{ reflowFlight.origin }}-{{ reflowFlight.destination }} [{{ _formatDateTime(reflowFlight.departureTime, 'HH:mm')}}-{{ _formatDateTime(reflowFlight.arrivalTime, 'HH:mm')}}]</span>
-                          <br>
+                          <div class$="{{_getReflowFlightsColor(listItem.reflowStatus)}} flex flex__item">
+                            <div class="pnr-carrier">{{ reflowFlight.operatingCarrier }}</div>
+                            <div class="pnr-flight-number">{{ reflowFlight.flightNumber }}</div>
+                            <div class="pnr-orig-dest">{{ reflowFlight.origin }} - {{ reflowFlight.destination }}</div>
+                            <div class="pnr-times">[{{ _formatDateTime(reflowFlight.departureTime, 'HH:mm/DD')}} - {{ _formatDateTime(reflowFlight.arrivalTime,
+                              'HH:mm/DD')}}]</div>
+                          </div>
                         </template>
                       </template>
-                      <template is="dom-if" if="{{_isReflowNACP(listItem)}}">
-                        <span class="title">No available seat found.</span>
+                      <template is="dom-if" if="{{_isReflowNACP(listItem.reflowStatus)}}">
+                        <span>No available seat found.</span>
                       </template>
-                      <template is="dom-if" if="{{_isReflowNARUL(listItem)}}">
-                        <span class="title">Rule Violation.</span>
+                      <template is="dom-if" if="{{_isReflowNARUL(listItem.reflowStatus)}}">
+                        <span>Rule Violation.</span>
                       </template>
                     </div>
                   </div>
                 </div>
                 <div class="text solution-item-row solution-item-commit flex__item--top">
-                  <span><button class="btn btn--tertiary">Commit</button></span>
-                  <br/>
-                  <span class="subtitle">{{ listItem.reflowStatus }}</span>
+                  <span>
+                    <button id="{{listItem.confirmationNumber}}" class$="btn {{_getCommitBtnClass(listItem.reflowStatus)}}" on-click="_commitSingle">Commit</button>
+                  </span>
+                  <br>
+                  <br>
+                  <template is="dom-if" if="{{_isReflowAvailableOAT(listItem)}}">
+                    <px-dropdown id="{{listItem.confirmationNumber}}" display-value="{{listItem.reflowStatus}}" value="{{listItem.reflowStatus}}">
+                      <px-dropdown-content extend-dropdown='true' extend-dropdown-by='25' max-cont-character-width='10' items='[ {"key":"1","val":"Rebooked - OAT"},{"key":"2","val":"Rebooked - Other"}]'>
+                      </px-dropdown-content>
+                    </px-dropdown>
+                  </template>
+                  <template is="dom-if" if="{{!_isReflowAvailableOAT(listItem)}}">
+                    <span class="subtitle">{{ listItem.reflowStatus }}</span>
+                  </template>
+
                 </div>
                 <div class="text solution-item-row solution-item-notify flex__item--top">
-                  <span><button class="btn btn--tertiary">Notify</button></span>
-                  <br/>
-                  <span class="subtitle">{{ listItem.notificationStatus }}</span>
+                  <span><button id="{{listItem.confirmationNumber}}" class$="btn {{_getNotifyBtnClass(listItem.notificationStatus, listItem.reflowStatus)}}" on-click="_notifySingle">Notify</button></span>
+                  <br>
+                  <br>
+                  <template is="dom-if" if="{{_isNotInterrupted(listItem.notificationStatus)}}">
+                    <span class="subtitle">{{ listItem.notificationStatus }}</span>
+                  </template>
                 </div>
                 <div class="text solution-item-row solution-item-color flex__item--top">
                   <span>
-                    <i class$="fa fa-circle {{ _getRouteCategoryClass(listItem.routeCategory) }}"></i>
+                    <i class$="fa fa-circle {{_getRouteCategoryClass(listItem.routeCategory)}}"></i>
                   </span>
                 </div>
               </div>
@@ -140,33 +203,35 @@ Custom property | Description | Default
         </ul>
       </div>
     </div>
+    <px-modal id="notifyModal" btn-modal-positive="OK" modal-heading="Notification Service">
+      <p>There are no PNRs to notify.</p>
+    </px-modal>
   </template>
 </dom-module>
 
 <script>
   Polymer({
-
     is: 'px-inbox-content',
-
-    /**
-     * Event that is fired when the selected item is changed in the list component.
-     * You should listen for this event and then access selectedItem to get the ID of the item.
-     * @event selected-item-changed
-     */
-
     properties: {
-      /**
-       * Array of items to include in the list. Each item in the array should be an object with:
-       * - id (used for fetching the details view)
-       * - title
-       * - subtitle
-       * - severity (one of "important", "error", "warning", or "information")
-       * - date (optional, should be valid <a href="https://www.w3.org/TR/NOTE-datetime">8601 date strings</a>)
-       * @property listItems
-       */
       listItems: {
         type: Array,
-        value: function() {
+        value: function () {
+          return [];
+        },
+        notify: true
+      },
+
+      selectedValue: {
+        type: String,
+        notify: true,
+        value: function () {
+          return '';
+        }
+      },
+
+      displayItems: {
+        type: Array,
+        value: function () {
           return [];
         },
         notify: true
@@ -174,56 +239,334 @@ Custom property | Description | Default
 
       selectedItems: {
         type: Array,
-        value: function() {
+        value: function () {
           return [];
         },
+        notify: true
+      },
+
+      disable: {
+        type: Boolean,
+        value: true,
+        notify: true
+      },
+
+      isSelectedAll: {
+        type: Boolean,
+        value: false,
+        notify: true
+      },
+
+      isCommitAndNotifyEnabled: {
+        type: Boolean,
+        value: false,
         notify: true
       }
     },
 
-    _hasSSR: function(listItem) {
+    listeners: {
+      'px-dropdown-value-changed': 'dpChanged'
+    },
+
+    dpChanged: function (evt) {
+      this.fire('updateOption', { reflowOption: evt.detail.val, confirmationNum: evt.path[2].id });
+    },
+
+    _addSelectedItem: function (evt) {
+      this._getSelectedItem(evt.currentTarget.id, evt.currentTarget.checked);
+
+      this._enableCommitAndNotify();
+
+      if (this.selectedItems.length == this.listItems.length) {
+        this.isSelectedAll = true;
+      } else {
+        this.isSelectedAll = false;
+      }
+    },
+
+    _getSelectedItem: function (id, isChecked) {
+      var index = this.selectedItems.indexOf(id);
+      if (isChecked) {
+        if (index == -1) {
+          this.push("selectedItems", id);
+        }
+      } else {
+
+        this.splice('selectedItems', index, 1);
+      }
+    },
+
+    _selectAll: function (evt) {
+      this.isSelectedAll = !this.isSelectedAll;
+      if (this.listItems != null && this.listItems.length > 0) {
+        for (var i = 0; i < this.listItems.length; i++) {
+          this.listItems[i].checked = this.isSelectedAll;
+          this._updateItem(this.listItems[i]);
+          var confirmationNumber = this.listItems[i].confirmationNumber;
+          if (this.isSelectedAll && (this.selectedItems.indexOf(confirmationNumber) == -1)) {
+            this.push("selectedItems", confirmationNumber);
+          }
+        }
+
+        if (!this.isSelectedAll) {
+          this.selectedItems = [];
+        }
+
+        this._enableCommitAndNotify();
+      }
+    },
+
+    _updateItem: function (listItem) {
+      var p = 'listItems.' + this.listItems.indexOf(listItem) + '.';
+      for (var i in listItem) {
+        if (listItem.hasOwnProperty(i)) {
+          this.notifyPath(p + i, listItem[i]);
+        }
+      }
+    },
+
+    _enableCommitAndNotify: function () {
+      if (this.selectedItems != null && this.selectedItems.length > 0) {
+        this.isCommitAndNotifyEnabled = true;
+      } else {
+        this.isCommitAndNotifyEnabled = false;
+      }
+    },
+
+    _isNotified: function (notificationStatus) {
+      if (notificationStatus == 'Notified') {
+        return this._getBtnClass(false);
+      }
+      return this._getBtnClass(true);
+    },
+
+    _isCommitted: function (reflowStatus) {
+      if (reflowStatus == 'Rebooked') {
+        return this._getBtnClass(false);
+      }
+      return this._getBtnClass(true);
+    },
+
+    _getCommitBtnClass: function (reflowStatus) {
+      if (reflowStatus == 'Available' || reflowStatus == 'Failed - CP' || reflowStatus == 'Failed - NET/CXN') {
+        if (reflowStatus == 'Rebooked') {
+          return this._getBtnClass(false);
+        }
+        return this._getBtnClass(true);
+      } else {
+        return this._getBtnClass(false);
+      }
+
+      // let option = this.selectedValue;
+      // this.fire('updateOption', { reflowOption: option, confirmationNum: evt.currentTarget.id });
+    },
+
+    _getNotifyBtnClass: function (notificationStatus, reflowStatus) {
+      if (reflowStatus == 'Rebooked' || reflowStatus == 'Rebooked - OAT' || reflowStatus == 'N/A - RUL' || reflowStatus == 'N/A – CP') {
+        if (notificationStatus == 'Notified') {
+          return this._getBtnClass(false);
+        }
+        return this._getBtnClass(true);
+      } else {
+        return this._getBtnClass(false);
+      }
+    },
+
+    _getBtnClass: function (isEnabled) {
+      if (isEnabled) {
+        return "btn--tertiary";
+      } else {
+        return "btn--disabled";
+      }
+    },
+
+    _hasSSR: function (listItem) {
       return listItem.hasSSR();
     },
 
-    _getPaxCount: function(listItem) {
+    _getPaxCount: function (listItem) {
       return listItem.getPaxCount();
     },
 
-    _getPrimaryFrequentFlyer: function(listItem) {
+    _getPrimaryFrequentFlyer: function (listItem) {
       return listItem.getPrimaryFrequentFlyer();
     },
-    _computeLateness: function(listItem) {
-      return listItem.getLateness();
+
+    _computeLateness: function (listItem) {
+      return listItem.getLateness(listItem.reflowStatus);
     },
 
-    _getRouteCategoryClass: function(routeCategory) {
-      return routeCategory.toLowerCase();
+    _computeArrivalDelay: function (flight, index) {
+      let arrivalDelay = flight.getArrivalDelay();
+      // console.log('this.arrivalDelay ' + arrivalDelay + ' | index ' + index);
+      if (arrivalDelay === 'Cancelled') {
+        if (index === 0) {
+          return '(' + arrivalDelay + ')';
+        }
+      } else if (arrivalDelay === '+00:00') {
+        return null;
+      } else {
+        return '(' + arrivalDelay + ')';
+      }
     },
 
-    _getReflowFlights: function(listItem) {
+    _getRouteCategoryClass: function (routeCategory) {
+      if (routeCategory != null && routeCategory != '') {
+        return routeCategory.toLowerCase();
+      }
+      return '';
+    },
+
+    _getReflowFlights: function (listItem) {
       return listItem.getReflowFlights();
     },
 
-    _getFlights: function(listItem) {
+    _getFlights: function (listItem) {
       return listItem.getFlights();
     },
 
-    _formatDateTime: function(date, format) {
+    _formatDateTime: function (date, format) {
       return moment(date).utc().format(format);
     },
 
-    _isReflowAvailable: function(listItem) {
-      return listItem.reflowStatus == "Available";
+    _isReflowFlightsVisible: function (reflowStatus) {
+      return reflowStatus != "N/A – CP" && reflowStatus != "N/A - RUL";
     },
 
-    _isReflowNACP: function(listItem) {
-      return listItem.reflowStatus == "N/A - CP";
+    _isReflowNACP: function (reflowStatus) {
+      return reflowStatus == "N/A – CP";
     },
 
-    _isReflowNARUL: function(listItem) {
-      return listItem.reflowStatus == "N/A - RUL";
+    _isReflowNARUL: function (reflowStatus) {
+      return reflowStatus == "N/A - RUL";
+    },
+
+    _isReflowAvailableOAT: function (listItem) {
+      return listItem.reflowStatus == "Available – OAT";
+    },
+
+    _commitSingle: function (evt) {
+      this._getSelectedItem(evt.currentTarget.id, true);
+      this._commit();
+    },
+
+    _commit: function () {
+      var pnrsToCommit = [];
+      for (var i = 0; i < this.listItems.length; i++) {
+        var listItem = this.listItems[i];
+        for (var j = 0; j < this.selectedItems.length; j++) {
+          if (listItem.confirmationNumber == this.selectedItems[j] && (listItem.reflowStatus == 'Available' || listItem.reflowStatus == 'Failed - CP' || listItem.reflowStatus == 'Failed - NET/CXN') && listItem.reflowStatus != 'Rebooked') {
+            pnrsToCommit.push(this.selectedItems[j]);
+          };
+        }
+      }
+
+      if (pnrsToCommit.length > 0) {
+        this.fire('commit', { selectedPNRs: pnrsToCommit });
+      }
+
+      this._clearSelectedItems();
+    },
+
+    _notifySingle: function (evt) {
+      this.notifyPath("selectedItems", []);
+      this._getSelectedItem(evt.currentTarget.id, true);
+      this._notify();
+    },
+
+    _notify: function () {
+      var pnrsToNotify = [];
+      for (var i = 0; i < this.listItems.length; i++) {
+        var listItem = this.listItems[i];
+        for (var j = 0; j < this.selectedItems.length; j++) {
+          if (listItem.confirmationNumber == this.selectedItems[j] && (listItem.reflowStatus == 'Rebooked' || listItem.reflowStatus == 'Rebooked - OAT' || listItem.reflowStatus == 'N/A - RUL' || listItem.reflowStatus == 'N/A – CP') && listItem.notificationStatus != 'Notified') {
+            pnrsToNotify.push(this.selectedItems[j]);
+          };
+        }
+      }
+
+      if (pnrsToNotify.length > 0) {
+        this.fire('notify', { selectedPNRs: pnrsToNotify });
+      } else {
+        this.$.notifyModal.modalButtonClicked();
+      }
+
+      this._clearSelectedItems();
+    },
+
+    _clearSelectedItems: function () {
+      this.selectedItems = [];
+      for (var i = 0; i < this.listItems.length; i++) {
+        var listItem = this.listItems[i];
+        this.notifyPath('listItems.' + i + '.checked', false);
+      }
+      this.isSelectedAll = false;
+    },
+
+    ready: function () {
+      // console.log(this.displayItems);
+    },
+
+    attached: function () {
+      if (document.getElementById('div-flights').addEventListener) {
+        // IE9, Chrome, Safari, Opera
+        document.getElementById('div-flights').addEventListener("mousewheel", this.scrollHorizontally, false);
+        // Firefox
+        document.getElementById('div-flights').addEventListener("DOMMouseScroll", this.scrollHorizontally, false);
+      } else {
+        // IE 6/7/8
+        document.getElementById('div-flights').attachEvent("onmousewheel", this.scrollHorizontally);
+      }
+    },
+
+    scrollHorizontally: function (e) {
+      e = window.event || e;
+      var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+      document.getElementById('div-flights').scrollLeft -= (delta * 40); // Multiplied by 40
+      e.preventDefault();
+    },
+
+    _formatStation: function (station) {
+      return station.substr(3, 7);
+    },
+
+    _getDuration: function (minutes) {
+      return moment.duration(minutes, "minutes").format("hh:mm", { trim: false });
+    },
+
+    _getDelayedColor: function (departureDelayMinutes) {
+      if (departureDelayMinutes > 15 && departureDelayMinutes < 180) {
+        return "delayed-15";
+      } else if (departureDelayMinutes >= 180) {
+        return "delayed-3"
+      }
+    },
+
+    _formatImpacted: function (businessCompartmentPax, coachCompartmentPax) {
+      var impactedString = '';
+
+      if (businessCompartmentPax != null) {
+        impactedString += "J" + businessCompartmentPax;
+      }
+
+      if (coachCompartmentPax != null) {
+        impactedString += "Y" + coachCompartmentPax;
+      }
+
+      return impactedString;
+    },
+
+    _isNotInterrupted: function (notificationStatus) {
+      return notificationStatus != 'N/I';
+    },
+
+    _getReflowFlightsColor: function (reflowStatus) {
+      if (reflowStatus == 'Rebooked' || reflowStatus == 'Rebooked - OAT' || reflowStatus == 'Rebooked - Other') {
+        return 'committed';
+      }
+      return '';
     }
 
-
   });
+
 </script>
